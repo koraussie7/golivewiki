@@ -1,0 +1,18 @@
+{
+  "name": "sendgo-mcp",
+  "version": "0.1.0",
+  "description": "KBizHub Business MCP — Sendgo(카카오 알림톡/SMS) 래퍼. send-go/openapi OpenAPI 3.0.3 기반, 엔드포인트 4개 선별 노출.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "inspect": "node scripts/inspect-spec.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  }
+}

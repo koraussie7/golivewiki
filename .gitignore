@@ -1,0 +1,21 @@
+# 도구/에이전트 산출물
+.agent-cache/
+.http-forge/
+.vscode/
+
+# Node
+node_modules/
+*.log
+npm-debug.log*
+
+# 환경 (예시는 유지)
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+
+# 임시
+*.tmp
+z-*.txt
