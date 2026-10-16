@@ -29,7 +29,15 @@ export function validatePhone(raw) {
       `휴대폰 번호 형식이 올바르지 않습니다: "${value}". 예) 01012345678 또는 010-1234-5678`
     );
   }
-  return value.replace(/[^0-9]/g, '');
+  // 하이픈 제거 후에도 01x + 7~8자리(총 9~10자리)인지 확인 —
+  // PHONE_RE 는 가운데 자릿수가 3~4로 유동적이라 자릿수가 어긋난 번호도 통과한다.
+  const digits = value.replace(/[^0-9]/g, '');
+  if (!/^01[0-9]{8,9}$/.test(digits)) {
+    throw new Error(
+      `휴대폰 번호 자릿수가 올바르지 않습니다: "${value}" (${digits.length}자리). 예) 01012345678`
+    );
+  }
+  return digits;
 }
 
 /** 본문 바이트 길이 근사 (한글 2바이트, 그 외 1바이트). */
@@ -60,6 +68,75 @@ export function resolveTemplateParams(declared, provided) {
     params: Object.fromEntries(map),
     extras: Object.keys(provided || {}).filter((k) => !declaredKeys.includes(k)),
   };
+}
+
+/**
+ * 발송 가능한(검수 승인) 템플릿을 조회한다.
+ * 반환: { template, declaredKeys } — declaredKeys 는 템플릿 본문이 요구하는 변수 키.
+ * 템플릿 코드가 목록에 없으면 검수 상태를 알 수 없으므로 발송을 중단한다.
+ */
+async function resolveApprovedTemplate(client, templateCode) {
+  const params = new URLSearchParams();
+  params.set('search', templateCode);
+  const sender = client.kakaoSenderKey;
+  if (sender) params.set('kakaoSenderKey', sender);
+  params.set('count', '100');
+
+  const res = await client.request(`/notice-templates?${params.toString()}`);
+  const data = res?.data ?? res ?? {};
+  const templates = data.templates ?? (Array.isArray(data) ? data : []);
+  const template = templates.find((t) => String(t.templateCode) === String(templateCode));
+  if (!template) {
+    throw new Error(`승인된 알림톡 템플릿을 찾을 수 없습니다: ${templateCode}`);
+  }
+  const inspectionStatus = template.inspectionStatus ?? template.status ?? template.templateStatus;
+  if (inspectionStatus !== 'APR') {
+    throw new Error(
+      `승인(APR)되지 않은 알림톡 템플릿입니다: ${templateCode} (검수 상태: ${inspectionStatus ?? '알 수 없음'})`
+    );
+  }
+  return { template, declaredKeys: extractTemplateVarKeys(template) };
+}
+
+/** 수신자 목록을 발송용 contacts 로 변환한다. (전화번호 검증 + 템플릿 변수 매핑) */
+function buildContacts(recipients, declaredKeys) {
+  return recipients.map((r) => {
+    const contact = validatePhone(r.phone);
+    const vars = resolveTemplateParams(declaredKeys, r.vars);
+    const entry = { contact };
+    if (Object.keys(vars.params).length > 0) {
+      entry.vars = vars.params;
+    }
+    return entry;
+  });
+}
+
+/**
+ * SMS 자동 대체(fallbackSms) 필드를 만든다. fallbackSms 미지정 시 빈 객체.
+ * 지정 시 문자 발신번호 키가 필요하다.
+ */
+function buildFallbackFields({ client, fallbackSms, smsSenderKey, template }) {
+  if (!fallbackSms) return {};
+
+  const key = smsSenderKey || client.smsSenderKey;
+  if (!key) {
+    throw new Error(
+      'fallbackSms 사용 시 문자 발신번호 키(smsSenderKey) 가 필요합니다. SENDGO_SMS_SENDER_KEY 환경변수를 설정하세요.'
+    );
+  }
+
+  const content = fallbackSms.content || template?.templateContent || template?.content || '';
+  const subject = fallbackSms.subject;
+  const bytes = smsByteLength(subject ? `${subject}${content}` : content);
+  const fields = {
+    fallbackSms: {
+      senderKey: key,
+      content,
+      ...(subject ? { subject } : {}),
+      ...(bytes > SMS_BYTE_LIMIT ? { messageType: 'LMS' } : {}),
+    },
+  };
+  return fields;
 }
 
 /** MCP 도구 스키마 — KBizHub Gateway 뒤에 노출되는 최소 집합. */
@@ -215,46 +292,14 @@ export function createHandlers(client) {
         );
       }
 
-      // 템플릿 변수명 확인. 스펙에 단건 조회 엔드포인트가 없어 목록에서 찾는다.
-      const tplList = await client.request(
-        `/notice-templates?search=${encodeURIComponent(templateCode)}&count=100`
-      );
-      const all = tplList?.data?.templates ?? tplList?.data ?? [];
-      const template = (Array.isArray(all) ? all : []).find(
-        (t) => t.templateCode === templateCode
-      );
-      const declaredKeys = template ? extractTemplateVarKeys(template) : [];
-
-      if (template && template.inspectionStatus && template.inspectionStatus !== 'APR') {
-        throw new Error(
-          `템플릿 ${templateCode} 은(는) ${template.inspectionStatus} 상태라 발송할 수 없습니다. 카카오 검수 승인(APR)이 필요합니다.`
-        );
-      }
-
-      const contacts = recipients.map((r) => {
-        const phone = validatePhone(r.phone);
-        const { params, extras } = resolveTemplateParams(declaredKeys, r.vars);
-        if (extras.length > 0) {
-          throw new Error(
-            `템플릿에 없는 변수 전달됨: ${extras.join(', ')}. 선언된 변수: ${
-              declaredKeys.join(', ') || '없음'
-            }`
-          );
-        }
-        const contact = { contact: phone };
-        for (const [k, v] of Object.entries(params)) contact[k] = v;
-        return contact;
+      const { template, declaredKeys } = await resolveApprovedTemplate(client, templateCode);
+      const contacts = buildContacts(recipients, declaredKeys);
+      const fallbackFields = buildFallbackFields({
+        client,
+        fallbackSms,
+        smsSenderKey,
+        template,
       });
-
-      // SMS 대체 발송은 senderKey 를 요구한다 (AlimtalkRequest 스펙 주석).
-      const useFallback = Boolean(fallbackSms);
-      let smsKey = smsSenderKey || client.smsSenderKey;
-      if (useFallback && !smsKey) {
-        throw new Error(
-          'replaceSms=Y 발송에는 senderKey(문자 발신번호 키) 가 필요합니다. ' +
-          'smsSenderKey 인자 또는 SENDGO_SMS_SENDER_KEY 환경변수를 설정하세요.'
-        );
-      }
 
       const body = {
         scheduleType: 'DIRECTLY',
@@ -262,27 +307,8 @@ export function createHandlers(client) {
         templateCode,
         kakaoSenderKey: senderKey,
         contacts,
+        ...fallbackFields,
       };
-
-      if (useFallback) {
-        const content = fallbackSms.content || template?.templateContent || '';
-        if (!content) {
-          throw new Error('fallbackSms.content 가 비어있고 템플릿 본문도 없습니다.');
-        }
-        const bytes = smsByteLength(content);
-        body.replaceSms = 'Y';
-        body.senderKey = smsKey;
-        body.smsContent = content;
-        // 90바이트 초과는 LMS 승격 → smsSubject 필수
-        if (bytes > SMS_BYTE_LIMIT && !fallbackSms.subject) {
-          throw new Error(
-            `SMS 본문이 ${bytes}바이트로 90바이트를 초과합니다. LMS 승격을 위해 fallbackSms.subject 가 필요합니다.`
-          );
-        }
-        if (fallbackSms.subject) body.smsSubject = fallbackSms.subject;
-      } else {
-        body.replaceSms = 'N';
-      }
 
       const res = await client.request('/notices/send', { method: 'POST', body });
       const data = res?.data ?? res ?? {};

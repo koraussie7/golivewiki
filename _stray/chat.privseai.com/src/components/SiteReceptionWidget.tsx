@@ -16,13 +16,8 @@ interface ReceptionMessage {
   content: string;
 }
 
-const ENDPOINT = "/agent-chat/v1/chat/completions";
+const ENDPOINT = "/api/reception-chat";
 const AGENT_ID = "privseai-reception";
-// bearer token exposed on the client is intentional: it is a *public*
-// untrusted rate-limited endpoint key (server-side scope), not a user key.
-// the gateway rejects tool calls + exec anyway. rotation is server-side.
-const RECEPTION_BEARER =
-  "9324631190ecf1ac8ef0240b0dc929c3672f8f68eacf75a4a31127d25e7df2e2";
 const GREETING = "안녕하세요! Luna예요 🌙 privseai에서 무엇을 도와드릴까요?";
 
 function makeSessionKey(): string {
@@ -66,7 +61,6 @@ export function SiteReceptionWidget() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${RECEPTION_BEARER}`,
           "x-openclaw-session-key": `agent:${AGENT_ID}:openai-user:${sessionKey}`,
           "x-openclaw-agent-id": AGENT_ID,
         },

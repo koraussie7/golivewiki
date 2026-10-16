@@ -72,6 +72,7 @@ export class SendgoClient {
     this._token = null;
     this._tokenExpiresAt = 0;
     this._tokenTtlMs = 50 * 60 * 1000;
+    this._tokenPromise = null;
   }
 
   /** accessKey:secretKey Base64 Basic 인증으로 토큰 발급. */
@@ -107,8 +108,26 @@ export class SendgoClient {
   async #getToken(force = false) {
     const now = Date.now();
     if (!force && this._token && now < this._tokenExpiresAt) return this._token;
-    this._token = await this.#issueToken();
-    this._tokenExpiresAt = now + this._tokenTtlMs;
+
+    if (force) {
+      this._token = null;
+      this._tokenExpiresAt = 0;
+    }
+
+    if (!this._tokenPromise) {
+      const tokenPromise = this.#issueToken();
+      this._tokenPromise = tokenPromise;
+      try {
+        this._token = await tokenPromise;
+        this._tokenExpiresAt = Date.now() + this._tokenTtlMs;
+      } finally {
+        if (this._tokenPromise === tokenPromise) this._tokenPromise = null;
+      }
+    } else {
+      const token = await this._tokenPromise;
+      this._token = token;
+      this._tokenExpiresAt = Date.now() + this._tokenTtlMs;
+    }
     return this._token;
   }
 
