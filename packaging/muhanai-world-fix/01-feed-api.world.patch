@@ -1,0 +1,28 @@
+diff --git a/deploy/feed-api.ts b/deploy/feed-api.ts
+index e53ce34..0ca20a6 100644
+--- a/deploy/feed-api.ts
++++ b/deploy/feed-api.ts
+@@ -1,6 +1,12 @@
+ // In-Worker feed and mesh endpoints backed by KV (with in-memory fallback).
+ // Handles live API requests directly on Cloudflare edge when origin is down.
+ import { createFeedStore, type FeedStore } from "./feed-store";
++import {
++	getWorldBrief,
++	getWorldHealth,
++	listWorldEvents,
++	listWorldPredictions,
++} from "./world-brief";
+ 
+ const DEMO_PEER_COUNT = 12_482;
+ 
+@@ -824,6 +830,10 @@ const ROUTES: Route[] = [
+ 	{ method: "POST", pattern: /^\/api\/knowledge\/nodes$/, handler: (r, m, s) => createKnowledgeNode(r, m, s) },
+ 	{ method: "POST", pattern: /^\/api\/ontology\/sync$/, handler: syncOntologyCells },
+ 	{ method: "GET", pattern: /^\/api\/ontology\/cells$/, handler: (r, m, s) => listOntologyCells(s) },
++	{ method: "GET", pattern: /^\/api\/world\/brief$/, handler: (r) => getWorldBrief(r) },
++	{ method: "GET", pattern: /^\/api\/world\/events$/, handler: (r) => listWorldEvents(r) },
++	{ method: "GET", pattern: /^\/api\/world\/predictions$/, handler: () => listWorldPredictions() },
++	{ method: "GET", pattern: /^\/api\/world\/health$/, handler: () => getWorldHealth() },
+ ];
+ 
+ const FEED_PREFIXES = [

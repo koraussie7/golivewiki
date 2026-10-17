@@ -1,0 +1,22 @@
+diff --git a/apps/web/src/components/WorldPage.tsx b/apps/web/src/components/WorldPage.tsx
+index a7ea791..e1e95bf 100644
+--- a/apps/web/src/components/WorldPage.tsx
++++ b/apps/web/src/components/WorldPage.tsx
+@@ -257,7 +257,16 @@ export const WorldPage: React.FC = () => {
+ 			fetchedAt: typeof payload.fetchedAt === "string" ? payload.fetchedAt : new Date().toISOString(),
+ 			});
+ 		} catch {
+-			// panel uses the ontology demo fallback when the API is unavailable
++			// API 404/오프라인 등으로 brief가 null이면 빈 화면이 되므로,
++			// 클라이언트 측 오프라인 스냅샷으로 렌더한다 (서버 스냅샷과 동일 형태).
++			setBrief({
++				source: "offline",
++				summary: "오프라인 스냅샷. 실시간 엔진 연결 시 세계 상태와 예측이 표시됩니다.",
++				domains: ["conflict", "disaster", "weather", "cyber", "infrastructure", "markets"],
++				events: [],
++				predictions: [],
++				fetchedAt: new Date().toISOString(),
++			});
+ 		} finally {
+ 			setLoading(false);
+ 		}

@@ -207,8 +207,8 @@ test('send_alimtalk: replaceSms=Y 인데 smsSenderKey 없으면 거부', async (
   await assert.rejects(
     () =>
       h.send_alimtalk({
-        templateCode: 'T1',
-        recipients: [{ phone: '01012345678' }],
+        templateCode: 'ORDER_CONFIRM_001',
+        recipients: [{ phone: '01012345678', vars: { name: '홍길동', orderNo: 'ORD-1' } }],
         fallbackSms: { content: '안내' },
       }),
     /SENDGO_SMS_SENDER_KEY|senderKey/
@@ -220,8 +220,8 @@ test('send_alimtalk: 90바이트 초과 대체문구는 subject 요구', async (
   await assert.rejects(
     () =>
       h.send_alimtalk({
-        templateCode: 'T1',
-        recipients: [{ phone: '01012345678' }],
+        templateCode: 'ORDER_CONFIRM_001',
+        recipients: [{ phone: '01012345678', vars: { name: '홍길동', orderNo: 'ORD-1' } }],
         fallbackSms: { content: '가'.repeat(60) }, // 120바이트
       }),
     /90바이트/
@@ -368,4 +368,145 @@ test('SendgoClient: 204 는 null', async () => {
     isToken(url) ? json({ data: { token: 'tok' } }) : new Response(null, { status: 204 })
   );
   assert.equal(await new SendgoClient(FAKE).request('/x', {}), null);
+});
+
+// ── createHandlers: 검증 실패 경로 (모두 스텁 클라이언트 사용) ──────────────
+
+/** 실제 HTTP 없이 createHandlers 만 검증하기 위한 스텁 클라이언트. */
+const stubClient = (extra = {}) => {
+  const calls = [];
+  return {
+    ...extra,
+    calls,
+    request: async (path, init) => {
+      calls.push({ path, init });
+      if (/notice-templates/.test(path)) return { data: { templates: [TEMPLATE_ORDER] } };
+      return { data: { messageId: 'm-stub' } };
+    },
+  };
+};
+
+test('createHandlers: 템플릿 목록 조회는 요청 파라미터를 그대로 전달', async () => {
+  const client = stubClient({ kakaoSenderKey: 'kakao-key' });
+  const out = await createHandlers(client).list_alimtalk_templates({
+    inspectionStatus: 'REJ',
+    search: 'ORDER',
+    count: '50',
+  });
+
+  const [call] = client.calls;
+  const params = new URL(call.path, 'https://x').searchParams;
+  assert.equal(params.get('inspectionStatus'), 'REJ');
+  assert.equal(params.get('kakaoSenderKey'), 'kakao-key');
+  assert.equal(params.get('search'), 'ORDER');
+  assert.equal(params.get('count'), '50');
+  assert.equal(out.templates.length, 1);
+  assert.deepEqual(out.templates[0].variableKeys, ['name', 'orderNo']);
+});
+
+test('createHandlers: send_alimtalk — templateCode 누락 시 거부', async () => {
+  const client = stubClient({ kakaoSenderKey: 'kakao-key' });
+  await assert.rejects(
+    () => createHandlers(client).send_alimtalk({ recipients: [{ phone: '01012345678' }] }),
+    /templateCode/
+  );
+  assert.equal(client.calls.length, 0, '검증 실패 시 API 를 호출하면 안 된다');
+});
+
+test('createHandlers: send_alimtalk — recipients 가 비면 거부', async () => {
+  const client = stubClient({ kakaoSenderKey: 'kakao-key' });
+  await assert.rejects(
+    () => createHandlers(client).send_alimtalk({ templateCode: 'T1', recipients: [] }),
+    /recipients/
+  );
+  assert.equal(client.calls.length, 0);
+});
+
+test('createHandlers: send_alimtalk — kakaoSenderKey 없으면 거부', async () => {
+  const client = stubClient();
+  await assert.rejects(
+    () => createHandlers(client).send_alimtalk({ templateCode: 'T1', recipients: [{ phone: '01012345678' }] }),
+    /kakaoSenderKey/
+  );
+  assert.equal(client.calls.length, 0);
+});
+
+test('createHandlers: send_alimtalk — 템플릿 목록에 없는 코드는 거부', async () => {
+  const client = stubClient({ kakaoSenderKey: 'kakao-key' });
+  await assert.rejects(
+    () =>
+      createHandlers(client).send_alimtalk({
+        templateCode: 'NOT_IN_LIST',
+        recipients: [{ phone: '01012345678' }],
+      }),
+    /찾을 수 없습니다/
+  );
+});
+
+test('createHandlers: send_alimtalk — 수신자 전화번호 형식 오류는 거부', async () => {
+  const client = stubClient({ kakaoSenderKey: 'kakao-key' });
+  await assert.rejects(
+    () =>
+      createHandlers(client).send_alimtalk({
+        templateCode: 'ORDER_CONFIRM_001',
+        recipients: [{ phone: '0212345678' }],
+      }),
+    /형식/
+  );
+});
+
+test('createHandlers: send_sms — content 누락 시 거부', async () => {
+  const client = stubClient({ smsSenderKey: 'sms-key' });
+  await assert.rejects(
+    () => createHandlers(client).send_sms({ recipients: [{ phone: '01012345678' }] }),
+    /content/
+  );
+  assert.equal(client.calls.length, 0);
+});
+
+test('createHandlers: send_sms — recipients 가 비면 거부', async () => {
+  const client = stubClient({ smsSenderKey: 'sms-key' });
+  await assert.rejects(
+    () => createHandlers(client).send_sms({ content: 'x', recipients: [] }),
+    /recipients/
+  );
+  assert.equal(client.calls.length, 0);
+});
+
+test('createHandlers: send_sms — SMS 한도 초과 + subject 없으면 거부', async () => {
+  const client = stubClient({ smsSenderKey: 'sms-key' });
+  await assert.rejects(
+    () => createHandlers(client).send_sms({ content: '가'.repeat(50), recipients: [{ phone: '01012345678' }] }),
+    /90바이트/
+  );
+  assert.equal(client.calls.length, 0);
+});
+
+test('createHandlers: send_sms — 한도 초과 시 LMS 로 자동 승격', async () => {
+  const client = stubClient({ smsSenderKey: 'sms-key' });
+  const out = await createHandlers(client).send_sms({
+    content: '가'.repeat(50),
+    subject: '[안내]',
+    recipients: [{ phone: '01012345678' }],
+  });
+
+  const raw = client.calls.find((c) => /messages\/send/.test(c.path)).init.body;
+  const body = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  assert.equal(body.messageType, 'LMS');
+  assert.equal(out.messageType, 'LMS');
+  assert.equal(out.byteLength, 100);
+});
+
+test('createHandlers: list_kakao_senders — data.senders 봉투를 정규화', async () => {
+  const client = {
+    request: async () => ({ data: { senders: [{ kakaoSenderKey: 'k-1' }] } }),
+  };
+  const out = await createHandlers(client).list_kakao_senders();
+  assert.deepEqual(out.senders, [{ kakaoSenderKey: 'k-1' }]);
+});
+
+test('createHandlers: list_kakao_senders — 배열 응답도 허용', async () => {
+  const client = { request: async () => [{ kakaoSenderKey: 'k-2' }] };
+  const out = await createHandlers(client).list_kakao_senders();
+  assert.deepEqual(out.senders, [{ kakaoSenderKey: 'k-2' }]);
 });

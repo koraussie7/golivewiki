@@ -1,0 +1,55 @@
+diff --git a/apps/web/src/components/WorldPage.tsx b/apps/web/src/components/WorldPage.tsx
+index a7ea791..a558844 100644
+--- a/apps/web/src/components/WorldPage.tsx
++++ b/apps/web/src/components/WorldPage.tsx
+@@ -212,9 +212,40 @@ export const WorldPage: React.FC = () => {
+ 	};
+ 	}, [brief, cells]);
+ 
++	// 오프라인 온톨로지 데모 그래프 — API 404 등으로 brief가 null이어도
++	// ontology 탭이 빈 캔버스가 되지 않도록 결정적 폴백을 렌더한다.
++	const OFFLINE_ONTOLOGY_DOMAINS = ["conflict", "disaster", "weather", "cyber", "infrastructure", "markets"];
++
++	function buildOfflineOntologyNodes(): OntologyNode[] {
++		const nodes: OntologyNode[] = OFFLINE_ONTOLOGY_DOMAINS.map((d) => ({
++			id: `domain-${d}`,
++			label: d,
++			type: "domain",
++			color: "#38bdf8",
++		}));
++		nodes.push({ id: "agent-ontograph", label: "Ontology-Graph (offline)", type: "agent", color: "#10b981" });
++		nodes.push({ id: "event-offline", label: "[오프라인] 엔진 연결 대기 중", type: "event", color: "#10b981" });
++		return nodes;
++	}
++
++	function buildOfflineOntologyEdges(): OntologyEdge[] {
++		const edges: OntologyEdge[] = [];
++		for (let i = 0; i < OFFLINE_ONTOLOGY_DOMAINS.length - 1; i++) {
++			edges.push({
++				id: `rel-domain-${i}`,
++				source: `domain-${OFFLINE_ONTOLOGY_DOMAINS[i]}`,
++				target: `domain-${OFFLINE_ONTOLOGY_DOMAINS[i + 1]}`,
++				label: "related-to",
++			});
++		}
++		edges.push({ id: "rel-agent", source: "agent-ontograph", target: "domain-cyber", label: "watches" });
++		edges.push({ id: "rel-off-1", source: "domain-infrastructure", target: "event-offline", label: "contains" });
++		return edges;
++	}
++
+ 	// Convert brief data to OntologyGraph nodes/edges
+ 	const ontologyNodes: OntologyNode[] = useMemo(() => {
+-		if (!brief) return []
++		if (!brief) return buildOfflineOntologyNodes()
+ 		const nodes: OntologyNode[] = []
+ 		brief.domains.forEach((domain) => {
+ 			nodes.push({ id: `domain-${domain}`, label: domain, type: "domain", color: "#38bdf8" })
+@@ -227,7 +258,7 @@ export const WorldPage: React.FC = () => {
+ 	}, [brief])
+ 
+ 	const ontologyEdges: OntologyEdge[] = useMemo(() => {
+-		if (!brief) return []
++		if (!brief) return buildOfflineOntologyEdges()
+ 		const edges: OntologyEdge[] = []
+ 		brief.events.forEach((event, idx) => {
+ 			edges.push({ id: `rel-${idx}-1`, source: `domain-${event.domain}`, target: `event-${event.id}`, label: "contains" })

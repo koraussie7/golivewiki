@@ -75,6 +75,13 @@ export function resolveTemplateParams(declared, provided) {
  * 반환: { template, declaredKeys } — declaredKeys 는 템플릿 본문이 요구하는 변수 키.
  * 템플릿 코드가 목록에 없으면 검수 상태를 알 수 없으므로 발송을 중단한다.
  */
+/** notice-templates 목록 응답의 봉투를 정규화해 배열로 돌려준다. */
+async function fetchTemplates(client, params = new URLSearchParams()) {
+  const res = await client.request(`/notice-templates?${params.toString()}`);
+  const data = res?.data ?? res ?? {};
+  return data.templates ?? (Array.isArray(data) ? data : []);
+}
+
 async function resolveApprovedTemplate(client, templateCode) {
   const params = new URLSearchParams();
   params.set('search', templateCode);
@@ -82,9 +89,7 @@ async function resolveApprovedTemplate(client, templateCode) {
   if (sender) params.set('kakaoSenderKey', sender);
   params.set('count', '100');
 
-  const res = await client.request(`/notice-templates?${params.toString()}`);
-  const data = res?.data ?? res ?? {};
-  const templates = data.templates ?? (Array.isArray(data) ? data : []);
+  const templates = await fetchTemplates(client, params);
   const template = templates.find((t) => String(t.templateCode) === String(templateCode));
   if (!template) {
     throw new Error(`승인된 알림톡 템플릿을 찾을 수 없습니다: ${templateCode}`);
@@ -100,13 +105,17 @@ async function resolveApprovedTemplate(client, templateCode) {
 
 /** 수신자 목록을 발송용 contacts 로 변환한다. (전화번호 검증 + 템플릿 변수 매핑) */
 function buildContacts(recipients, declaredKeys) {
-  return recipients.map((r) => {
-    const contact = validatePhone(r.phone);
-    const vars = resolveTemplateParams(declaredKeys, r.vars);
-    const entry = { contact };
-    if (Object.keys(vars.params).length > 0) {
-      entry.vars = vars.params;
+  return recipients.map((raw) => {
+    const r = raw && typeof raw === 'object' ? raw : {};
+    const phone = validatePhone(r.phone);
+    const { params, extras } = resolveTemplateParams(declaredKeys, r.vars);
+    if (extras.length > 0) {
+      throw new Error(
+        `템플릿에 없는 변수 전달됨: ${extras.join(', ')}. 선언된 변수: ${declaredKeys.join(', ') || '없음'}`
+      );
     }
+    const entry = { contact: phone };
+    for (const [k, v] of Object.entries(params)) entry[k] = v;
     return entry;
   });
 }
@@ -116,26 +125,33 @@ function buildContacts(recipients, declaredKeys) {
  * 지정 시 문자 발신번호 키가 필요하다.
  */
 function buildFallbackFields({ client, fallbackSms, smsSenderKey, template }) {
-  if (!fallbackSms) return {};
+  const useFallback = Boolean(fallbackSms);
+  if (!useFallback) return { replaceSms: 'N' };
 
   const key = smsSenderKey || client.smsSenderKey;
   if (!key) {
     throw new Error(
-      'fallbackSms 사용 시 문자 발신번호 키(smsSenderKey) 가 필요합니다. SENDGO_SMS_SENDER_KEY 환경변수를 설정하세요.'
+      'replaceSms=Y 발송에는 senderKey(문자 발신번호 키) 가 필요합니다. ' +
+        'smsSenderKey 인자 또는 SENDGO_SMS_SENDER_KEY 환경변수를 설정하세요.'
     );
   }
 
   const content = fallbackSms.content || template?.templateContent || template?.content || '';
-  const subject = fallbackSms.subject;
-  const bytes = smsByteLength(subject ? `${subject}${content}` : content);
+  if (!content) {
+    throw new Error('fallbackSms.content 가 비어있고 템플릿 본문도 없습니다.');
+  }
+  const bytes = smsByteLength(content);
+  if (bytes > SMS_BYTE_LIMIT && !fallbackSms.subject) {
+    throw new Error(
+      `SMS 본문이 ${bytes}바이트로 90바이트를 초과합니다. LMS 승격을 위해 fallbackSms.subject 가 필요합니다.`
+    );
+  }
   const fields = {
-    fallbackSms: {
-      senderKey: key,
-      content,
-      ...(subject ? { subject } : {}),
-      ...(bytes > SMS_BYTE_LIMIT ? { messageType: 'LMS' } : {}),
-    },
+    replaceSms: 'Y',
+    senderKey: key,
+    smsContent: content,
   };
+  if (fallbackSms.subject) fields.smsSubject = fallbackSms.subject;
   return fields;
 }
 
@@ -266,9 +282,7 @@ export function createHandlers(client) {
       if (sender) params.set('kakaoSenderKey', sender);
       if (search) params.set('search', search);
       params.set('count', String(Number(count) || 30));
-      const res = await client.request(`/notice-templates?${params.toString()}`);
-      const data = res?.data ?? res ?? {};
-      const templates = data.templates ?? (Array.isArray(data) ? data : []);
+      const templates = await fetchTemplates(client, params);
       return {
         templates: templates.map((t) => ({
           templateCode: t.templateCode,
@@ -337,9 +351,24 @@ export function createHandlers(client) {
       if (messageType !== 'SMS' && !subject) {
         throw new Error(`${messageType} 발송에는 subject 가 필수입니다.`);
       }
+
+      // SMS(90바이트) 한도를 넘으면 자동으로 LMS 로 승격한다. 제목이 필요한 유형은
+      // 이미 위에서 검증했다.
+      const bytes = smsByteLength(content);
+      let resolvedType = messageType;
+      if (bytes > SMS_BYTE_LIMIT && messageType === 'SMS') {
+        if (!subject) {
+          throw new Error(
+            `본문이 ${bytes}바이트로 SMS 한도(${SMS_BYTE_LIMIT}바이트)를 초과합니다. ` +
+              'subject 를 지정해 LMS 로 발송하거나 본문을 줄이세요.'
+          );
+        }
+        resolvedType = 'LMS';
+      }
+
       const body = {
         campaignType: 'MESSAGE',
-        messageType,
+        messageType: resolvedType,
         scheduleType: 'DIRECTLY',
         at: null,
         content,
@@ -354,7 +383,8 @@ export function createHandlers(client) {
         messageId: data.messageId ?? data.id ?? null,
         requestCount: recipients.length,
         accepted: true,
-        messageType,
+        messageType: resolvedType,
+        byteLength: bytes,
       };
     },
   };
