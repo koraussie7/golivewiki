@@ -114,58 +114,382 @@
         margin-bottom: 24px;
       }
       /* === STEP 1: Category grid === */
-      .cat-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-        gap: 12px;
-      }
-      .cat-card {
-        background: #141418;
+      /* === STEP 1: inDrive-style home (map + bottom sheet) === */
+      .app-shell {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        height: min(92vh, 820px);
+        min-height: 640px;
         border: 1px solid #27272a;
-        border-radius: 16px;
-        padding: 16px 14px;
+        border-radius: 24px;
+        overflow: hidden;
+        background: #e9ebee;
+      }
+      .map-wrap {
+        position: relative;
+        flex: 0 0 340px;
+        height: 340px;
+        min-height: 280px;
+        z-index: 0;
+        overflow: hidden;
+        /* inDrive-style light map fallback */
+        background-color: #e9ebee;
+        background-image:
+          linear-gradient(#d8dce1 2px, transparent 2px),
+          linear-gradient(90deg, #d8dce1 2px, transparent 2px),
+          linear-gradient(#f2f4f6 1px, transparent 1px),
+          linear-gradient(90deg, #f2f4f6 1px, transparent 1px);
+        background-size: 120px 120px, 120px 120px, 36px 36px, 36px 36px;
+      }
+      #ride-map {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background: #e9ebee;
+      }
+      .leaflet-container { font-family: "Plus Jakarta Sans", system-ui, sans-serif; background: #e9ebee; }
+      .leaflet-control-attribution {
+        font-size: 9px;
+        background: rgba(255, 255, 255, 0.75);
+        color: #71717a;
+      }
+      .map-fab {
+        position: absolute;
+        z-index: 600;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: none;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #18181b;
+        font-size: 18px;
+      }
+      .map-fab:hover { background: #f4f4f5; }
+      .map-fab-menu { top: 16px; left: 16px; }
+      .map-fab-locate { right: 16px; bottom: 68px; }
+      .pickup-card {
+        position: absolute;
+        z-index: 600;
+        top: 26%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        cursor: pointer;
+        max-width: 86%;
+      }
+      .pickup-card .pickup-label {
+        font-size: 12px;
+        color: #71717a;
+        font-weight: 600;
+      }
+      .pickup-card .pickup-name {
+        font-size: 16px;
+        font-weight: 800;
+        color: #18181b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .pickup-card .pickup-chevron { color: #a1a1aa; font-size: 18px; }
+      .map-pin {
+        position: absolute;
+        z-index: 600;
+        top: calc(26% + 66px);
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        pointer-events: none;
+      }
+      .map-pin .pin-badge {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: #111114;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+      }
+      .map-pin .pin-dot {
+        width: 18px;
+        height: 18px;
+        margin-top: -6px;
+        border-radius: 50%;
+        background: #2f6bff;
+        border: 3px solid #ffffff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+      }
+      .sheet {
+        position: relative;
+        z-index: 10;
+        margin-top: -22px;
+        background: #ffffff;
+        color: #18181b;
+        border-radius: 22px 22px 0 0;
+        padding: 10px 16px 12px;
+        box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.28);
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .sheet-scroll {
+        flex: 0 0 auto;
+        overflow-y: visible;
+        overflow-x: hidden;
+        min-height: 0;
+        padding-bottom: 4px;
+      }
+      .sheet-scroll.sheet-scroll-main {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        min-height: 120px;
+      }
+      .sheet-footer {
+        flex: 0 0 auto;
+        background: #ffffff;
+        border-top: 1px solid #f1f1f3;
+        padding: 10px 0 4px;
+        box-shadow: 0 -6px 16px rgba(0,0,0,.06);
+      }
+      .sheet-handle {
+        width: 40px;
+        height: 4px;
+        border-radius: 999px;
+        background: #d4d4d8;
+        margin: 0 auto 12px;
+      }
+      .sheet-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: #18181b;
+        margin: 0 0 4px;
+      }
+      .sheet-sub {
+        font-size: 12.5px;
+        color: #71717a;
+        line-height: 1.5;
+        margin: 0 0 14px;
+      }
+      .cat-grid {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 2px 2px 12px;
+        margin: 0 -4px 8px;
+        scrollbar-width: none;
+      }
+      .cat-grid::-webkit-scrollbar { display: none; }
+      .cat-chip {
+        flex: 0 0 auto;
+        width: 96px;
+        background: #ffffff;
+        border: 1.5px solid #e4e4e7;
+        border-radius: 14px;
+        padding: 8px 4px 6px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
         cursor: pointer;
         transition: all 0.15s;
-        position: relative;
+        font-family: inherit;
       }
-      .cat-card:hover {
-        border-color: #14ebc0;
-        transform: translateY(-2px);
+      .cat-chip:hover { border-color: #a1a1aa; transform: translateY(-2px); }
+      .cat-chip.selected {
+        background: #d9ecff;
+        border-color: #8ec9ff;
       }
-      .cat-card .badge-top {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        font-size: 9px;
-        font-weight: 700;
-        padding: 2px 6px;
-        border-radius: 4px;
-        background: rgba(245, 158, 11, 0.15);
-        color: #f59e0b;
+      .cat-chip .chip-ico { font-size: 26px; line-height: 1; }
+      .cat-chip .chip-name {
+        font-size: 10.5px;
+        font-weight: 800;
+        color: #18181b;
+        text-align: center;
+        line-height: 1.25;
+        min-height: 26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        word-break: keep-all;
+        overflow-wrap: break-word;
       }
-      .cat-card .emoji {
-        font-size: 32px;
-        margin-bottom: 8px;
+      /* === inDrive-style From/To + fare rows === */
+      .route-box {
+        background: #f4f4f5;
+        border-radius: 16px;
+        padding: 6px 6px 6px 14px;
+        margin-bottom: 12px;
       }
-      .cat-card .name {
+      .route-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 6px;
+      }
+      .route-row + .route-row { border-top: 1px solid #e4e4e7; }
+      .route-dot {
+        flex: 0 0 auto;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .route-dot.from { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.18); }
+      .route-dot.to { background: #2f6bff; box-shadow: 0 0 0 3px rgba(47,107,255,.18); }
+      .route-row input {
+        flex: 1;
+        border: none;
+        background: transparent;
         font-size: 14px;
         font-weight: 700;
-        color: #fafafa;
-        margin-bottom: 4px;
+        color: #18181b;
+        font-family: inherit;
+        outline: none;
+        min-width: 0;
       }
-      .cat-card .desc {
+      .route-row input::placeholder { color: #a1a1aa; font-weight: 600; }
+      .fare-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 2px 0 12px;
+      }
+      .fare-stepper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #f4f4f5;
+        border-radius: 999px;
+        padding: 6px;
+        flex: 1;
+      }
+      .fare-stepper button {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: #ffffff;
+        box-shadow: 0 1px 4px rgba(0,0,0,.12);
+        font-size: 18px;
+        font-weight: 800;
+        cursor: pointer;
+        color: #18181b;
+        line-height: 1;
+      }
+      .fare-stepper button:active { transform: scale(.94); }
+      .fare-stepper .fare-val {
+        flex: 1;
+        text-align: center;
+        font-weight: 800;
+        font-size: 17px;
+        font-family: "JetBrains Mono", monospace;
+        color: #18181b;
+      }
+      .fare-hint {
         font-size: 11px;
-        color: #a1a1aa;
-        line-height: 1.4;
-        min-height: 30px;
-      }
-      .cat-card .avg {
-        margin-top: 10px;
-        font-size: 12px;
-        color: #14ebc0;
         font-weight: 700;
+        color: #71717a;
+        white-space: nowrap;
+      }
+      .cat-chip .chip-meta {
+        font-size: 10px;
+        font-weight: 700;
+        color: #71717a;
         font-family: "JetBrains Mono", monospace;
       }
+      .search-bar {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #f4f4f5;
+        border: none;
+        border-radius: 999px;
+        padding: 15px 20px;
+        font-size: 17px;
+        font-weight: 800;
+        color: #18181b;
+        cursor: pointer;
+        margin-bottom: 6px;
+        text-align: left;
+        font-family: inherit;
+      }
+      .search-bar:hover { background: #ececee; }
+      .search-bar .ph {
+        color: #52525b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .recent-label {
+        font-size: 11px;
+        font-weight: 800;
+        color: #a1a1aa;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 10px 0 2px;
+      }
+      .recent-item {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        background: none;
+        border: none;
+        border-bottom: 1px solid #f1f1f3;
+        padding: 12px 4px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #18181b;
+        cursor: pointer;
+        text-align: left;
+        font-family: inherit;
+      }
+      .recent-item:last-of-type { border-bottom: none; }
+      .recent-item:hover { background: #fafafa; }
+      .recent-item .rpin {
+        flex: 0 0 auto;
+        width: 24px;
+        text-align: center;
+        font-size: 17px;
+      }
+      .recent-item .rloc {
+        color: #71717a;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: auto;
+        white-space: nowrap;
+      }
+      .btn-cta {
+        width: 100%;
+        background: #22c55e;
+        color: #ffffff;
+        border: none;
+        border-radius: 14px;
+        padding: 15px;
+        font-size: 15px;
+        font-weight: 800;
+        cursor: pointer;
+        margin-top: 12px;
+        font-family: inherit;
+      }
+      .btn-cta:hover { background: #1eaf55; }
       /* === STEP 2: Form === */
       .form-card {
         background: #141418;
@@ -500,11 +824,82 @@
     </div>
 
     <div class="container">
-      <!-- STEP 1: Category selection grid -->
+      <!-- STEP 1: inDrive-style home (map + bottom sheet) -->
       <div class="step active" id="step-1">
         <h1 class="page-title" data-i18n="ride_step1_title">어떤 서비스가 필요하신가요?</h1>
         <p class="page-sub" data-i18n="ride_step1_sub">가장 인기 있는 카테고리 18개에서 선택하세요. inDrive 스타일로 여러 기사에게 동시에 카운터오퍼를 받습니다.</p>
-        <div class="cat-grid" id="cat-grid"></div>
+
+        <div class="app-shell">
+          <div class="map-wrap">
+            <div id="ride-map"></div>
+            <button class="map-fab map-fab-menu" type="button" aria-label="menu">☰</button>
+            <div class="pickup-card" id="pickup-card" onclick="proceedFromHome()">
+              <div>
+                <div class="pickup-label" data-i18n="ride_pickup_label">출발지</div>
+                <div class="pickup-name" data-i18n="ride_pickup_name">서울 강남구 테헤란로 152</div>
+              </div>
+              <span class="pickup-chevron">›</span>
+            </div>
+            <div class="map-pin" aria-hidden="true">
+              <div class="pin-badge">🚶</div>
+              <div class="pin-dot"></div>
+            </div>
+            <button class="map-fab map-fab-locate" type="button" aria-label="my location" onclick="recenterMap()">➤</button>
+          </div>
+
+          <div class="sheet">
+            <div class="sheet-handle"></div>
+
+            <div class="sheet-scroll">
+            <!-- inDrive-style From → To -->
+            <div class="route-box">
+              <div class="route-row">
+                <span class="route-dot from"></span>
+                <input type="text" id="home-from" value="서울 강남구 테헤란로 152" data-i18n-ph="ph_task_location" placeholder="출발지 입력" />
+              </div>
+              <div class="route-row">
+                <span class="route-dot to"></span>
+                <input type="text" id="home-to" data-i18n-ph="ride_search_ph" placeholder="어디로 가시나요?" />
+              </div>
+            </div>
+
+            <div class="cat-grid" id="cat-grid"></div>
+            </div><!-- /sheet-scroll -->
+
+            <div class="sheet-footer">
+            <!-- inDrive-style fare stepper + CTA -->
+            <div class="fare-row">
+              <div class="fare-stepper">
+                <button type="button" aria-label="decrease" onclick="stepHomeFare(-1)">−</button>
+                <span class="fare-val" id="home-fare-val">₩50,000</span>
+                <button type="button" aria-label="increase" onclick="stepHomeFare(1)">+</button>
+              </div>
+              <span class="fare-hint" id="home-fare-hint">추천 ₩85,000</span>
+            </div>
+
+            <button class="btn-cta" type="button" id="home-cta" onclick="proceedFromHome()">기사 찾기 · ₩50,000 제안</button>
+            </div><!-- /sheet-footer -->
+
+            <div class="sheet-scroll">
+            <div class="recent-label" data-i18n="ride_recent_label">최근 목적지</div>
+            <button class="recent-item" type="button" onclick="proceedFromHome('서울 성동구 왕십리로 204')">
+              <span class="rpin">📍</span>
+              <span data-i18n="ride_recent_1">서울 성동구 왕십리로 204</span>
+              <span class="rloc" data-i18n="ride_recent_1_loc">집</span>
+            </button>
+            <button class="recent-item" type="button" onclick="proceedFromHome('서울 강남구 테헤란로 152')">
+              <span class="rpin">📍</span>
+              <span data-i18n="ride_recent_2">서울 강남구 테헤란로 152</span>
+              <span class="rloc" data-i18n="ride_recent_2_loc">회사</span>
+            </button>
+            <button class="recent-item" type="button" onclick="proceedFromHome('인천광역시 중구 공항로 272')">
+              <span class="rpin">✈️</span>
+              <span data-i18n="ride_recent_3">인천국제공항 제1여객터미널</span>
+              <span class="rloc" data-i18n="ride_recent_3_loc">공항</span>
+            </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- STEP 2: Form (per-category) -->
@@ -592,6 +987,7 @@
       </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script src="./js/screens-07-bundle.js" defer></script>
     <script>
       // Inline language switcher handlers (work even if i18n.js fails)

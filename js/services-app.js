@@ -122,15 +122,14 @@ window.submitRequest = async function () {
   state.offers = [];
 
   try {
-    // 1. Save request via REST API
+    // 1. Save request via REST API (schema: tasks.region/timing/budget_krw)
     const result = await insertTask({
       category: state.selectedCategory.id,
       title: state.task.title,
       description: state.task.description,
-      location_text: state.task.location,
-      when_text: state.task.when,
-      poster_offer: state.task.myOffer,
-      suggested_price: state.task.suggested,
+      region: state.task.location,
+      timing: state.task.when,
+      budget_krw: state.task.myOffer,
       status: "open",
     });
 
@@ -156,7 +155,8 @@ window.submitRequest = async function () {
     simulateOffers(state.task.id);
   } catch (e) {
     console.error("Submit failed:", e);
-    alert("요청 저장 실패: " + e.message + "\n\n그래도 시뮬레이션은 진행합니다.");
+    // RLS/anon policy may block INSERT — degrade gracefully to simulation
+    console.warn("[tasks] INSERT skipped (RLS or network):", e.message);
     state.task.id = "local-" + Date.now();
     simulateOffers(state.task.id);
   }

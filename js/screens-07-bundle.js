@@ -281,30 +281,26 @@ const state = {
   offers: [],
 };
 
-// === Render: Step 1 (Category Grid) ===
+// === Render: Step 1 (inDrive-style category carousel) ===
 function renderCategories() {
   const grid = document.getElementById("cat-grid");
   if (!grid) return;
   grid.innerHTML = "";
 
-  const topIds = CATEGORIES
-    .filter((c) => c.top === 1)
-    .slice(0, 3)
-    .map((c) => c.id);
+  const selectedId = state.selectedCategory ? state.selectedCategory.id : null;
 
   for (const cat of CATEGORIES) {
-    const card = document.createElement("div");
-    card.className = "cat-card";
-    card.dataset.id = cat.id;
-    card.innerHTML = `
-      ${topIds.includes(cat.id) ? '<div class="badge-top">🔥 인기 1위</div>' : ""}
-      <div class="emoji">${cat.emoji}</div>
-      <div class="name">${cat.ko}</div>
-      <div class="desc">${cat.desc}</div>
-      <div class="avg">평균 ${cat.avgPrice}</div>
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "cat-chip" + (cat.id === selectedId ? " selected" : "");
+    chip.dataset.id = cat.id;
+    chip.innerHTML = `
+      <span class="chip-ico">${cat.emoji}</span>
+      <span class="chip-name">${cat.ko}</span>
+      <span class="chip-meta">${cat.avgPrice}</span>
     `;
-    card.addEventListener("click", () => selectCategory(cat));
-    grid.appendChild(card);
+    chip.addEventListener("click", () => selectCategory(cat));
+    grid.appendChild(chip);
   }
 }
 
@@ -319,15 +315,66 @@ window.goStep = function (n) {
     if (i < n) pill.classList.add("done");
     if (i === n) pill.classList.add("active");
   }
+
+  // Map was hidden while on step 2/3 — re-init / refresh its size on return
+  if (n === 1) {
+    if (window._rideMap) {
+      try { window._rideMap.invalidateSize(); } catch (e) { /* noop */ }
+    } else {
+      initRideMap();
+    }
+  }
 };
 
-// === Step 2: Form fill ===
+// === Step 1 → select category (highlight only, stay on home) ===
 function selectCategory(cat) {
   state.selectedCategory = cat;
 
   const avg = parseInt(cat.avgPrice.replace(/[^0-9]/g, ""), 10) || 85000;
   state.task.suggested = avg;
   state.task.myOffer = Math.round(avg * 0.8);
+
+  // Update carousel highlight without re-rendering the whole list
+  document.querySelectorAll("#cat-grid .cat-chip").forEach((chip) => {
+    chip.classList.toggle("selected", chip.dataset.id === cat.id);
+  });
+
+  syncHomeFareUI();
+}
+
+// === inDrive-style home fare stepper ===
+window.stepHomeFare = function (dir) {
+  const step = 5000;
+  const cur = state.task.myOffer || 50000;
+  const next = Math.min(1000000, Math.max(10000, cur + dir * step));
+  state.task.myOffer = next;
+  syncHomeFareUI();
+};
+
+function fmtKRW(n) {
+  return "₩" + Number(n || 0).toLocaleString("ko-KR");
+}
+
+function syncHomeFareUI() {
+  const fareVal = document.getElementById("home-fare-val");
+  if (fareVal) fareVal.textContent = fmtKRW(state.task.myOffer);
+  const hint = document.getElementById("home-fare-hint");
+  if (hint) hint.textContent = "추천 " + fmtKRW(state.task.suggested || 85000);
+  const cta = document.getElementById("home-cta");
+  if (cta) cta.textContent = `기사 찾기 · ${fmtKRW(state.task.myOffer)} 제안`;
+  const sliderVal = document.getElementById("slider-value");
+  if (sliderVal) sliderVal.textContent = fmtKRW(state.task.myOffer);
+  const myOffer = document.getElementById("my-offer-display");
+  if (myOffer) myOffer.textContent = fmtKRW(state.task.myOffer);
+}
+
+// === Step 1 → Step 2 (search bar / recent place / CTA) ===
+window.proceedFromHome = function (presetLocation) {
+  if (!state.selectedCategory) {
+    selectCategory(CATEGORIES[0]);
+  }
+  const cat = state.selectedCategory;
+  const avg = state.task.suggested;
 
   document.getElementById("form-cat-emoji").textContent = cat.emoji;
   document.getElementById("form-cat-name").textContent = cat.ko;
@@ -343,10 +390,70 @@ function selectCategory(cat) {
 
   document.getElementById("task-title").value = "";
   document.getElementById("task-desc").value = "";
-  document.getElementById("task-location").value = "";
+  const homeFrom = document.getElementById("home-from");
+  const homeTo = document.getElementById("home-to");
+  const fromVal = presetLocation || (homeFrom ? homeFrom.value.trim() : "");
+  document.getElementById("task-location").value = fromVal || "";
+  if (homeTo && homeTo.value.trim()) {
+    document.getElementById("task-desc").value = `목적지: ${homeTo.value.trim()}`;
+  }
 
   goStep(2);
+  if (presetLocation) {
+    document.getElementById("task-title").focus();
+  }
+};
+
+// === Step 1: Leaflet map (inDrive-style home) ===
+window._rideMap = null;
+
+function initRideMap() {
+  const el = document.getElementById("ride-map");
+  if (!el || typeof L === "undefined") return;
+  if (window._rideMap) {
+    try { window._rideMap.invalidateSize(); } catch (e) { /* noop */ }
+    return;
+  }
+
+  try {
+    window._rideMap = L.map(el, {
+      zoomControl: false,
+      attributionControl: true,
+      scrollWheelZoom: false,
+      dragging: true,
+      tap: true,
+    }).setView([37.5063, 127.0533], 15); // Seoul, Gangnam-ish default
+
+    // inDrive-style light tiles (CARTO) with OSM fallback
+    const light = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+      maxZoom: 19,
+      subdomains: "abcd",
+      attribution: "&copy; OpenStreetMap &copy; CARTO",
+    });
+    light.on("tileerror", function () {
+      try {
+        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: "&copy; OpenStreetMap",
+        }).addTo(window._rideMap);
+      } catch (e) { /* noop */ }
+    });
+    light.addTo(window._rideMap);
+
+    // Tiles may finish after sheet layout — force a resize
+    setTimeout(() => { try { window._rideMap.invalidateSize(); } catch (e) {} }, 300);
+    setTimeout(() => { try { window._rideMap.invalidateSize(); } catch (e) {} }, 1200);
+  } catch (e) {
+    console.warn("[ride-map] Leaflet init failed, using fallback grid:", e);
+    window._rideMap = null;
+  }
 }
+
+window.recenterMap = function () {
+  if (window._rideMap) {
+    window._rideMap.setView([37.5063, 127.0533], 15);
+  }
+};
 
 // === Slider update ===
 window.updateOffer = function (val) {
@@ -354,6 +461,10 @@ window.updateOffer = function (val) {
   const formatted = "₩" + state.task.myOffer.toLocaleString("ko-KR");
   document.getElementById("my-offer-display").textContent = formatted;
   document.getElementById("slider-value").textContent = formatted;
+  const fareVal = document.getElementById("home-fare-val");
+  if (fareVal) fareVal.textContent = formatted;
+  const cta = document.getElementById("home-cta");
+  if (cta) cta.textContent = `기사 찾기 · ${formatted} 제안`;
 };
 
 // === Step 3: Submit request ===
@@ -378,15 +489,14 @@ window.submitRequest = async function () {
   state.offers = [];
 
   try {
-    // 1. Save request via REST API
+    // 1. Save request via REST API (schema: tasks.region/timing/budget_krw)
     const result = await insertTask({
       category: state.selectedCategory.id,
       title: state.task.title,
       description: state.task.description,
-      location_text: state.task.location,
-      when_text: state.task.when,
-      poster_offer: state.task.myOffer,
-      suggested_price: state.task.suggested,
+      region: state.task.location,
+      timing: state.task.when,
+      budget_krw: state.task.myOffer,
       status: "open",
     });
 
@@ -412,7 +522,8 @@ window.submitRequest = async function () {
     simulateOffers(state.task.id);
   } catch (e) {
     console.error("Submit failed:", e);
-    alert("요청 저장 실패: " + e.message + "\n\n그래도 시뮬레이션은 진행합니다.");
+    // RLS/anon policy may block INSERT — degrade gracefully to simulation
+    console.warn("[tasks] INSERT skipped (RLS or network):", e.message);
     state.task.id = "local-" + Date.now();
     simulateOffers(state.task.id);
   }
@@ -553,6 +664,7 @@ function escapeHtml(s) {
 // === Init ===
 document.addEventListener("DOMContentLoaded", () => {
   renderCategories();
+  initRideMap();
 });
 
 
@@ -564,5 +676,6 @@ if (typeof counterThis !== 'undefined') window.counterThis = counterThis;
 if (typeof acceptThis !== 'undefined') window.acceptThis = acceptThis;
 if (typeof declineThis !== 'undefined') window.declineThis = declineThis;
 if (typeof renderCategories !== 'undefined') window.renderCategories = renderCategories;
+if (typeof initRideMap !== 'undefined') window.initRideMap = initRideMap;
 if (typeof CATEGORIES !== 'undefined') window.CATEGORIES = CATEGORIES;
 if (typeof state !== 'undefined') window.state = state;
