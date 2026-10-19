@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+      golive.wiki — 백엔드 API & 플랫폼 통합 관리자 콘솔 (Admin Console)
+    </title>
+    <link rel="stylesheet" href="../styles/tokens.css" />
+    <script src="../styles/i18n.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --at-primary: #14ebc0;
+        --at-blue: #0a65fc;
+        --at-dark: #09090b;
+        --at-surface: #141418;
+        --at-card-bg: #18181d;
+        --at-border: #27272a;
+        --at-text: #fafafa;
+        --at-muted: #a1a1aa;
+        --at-danger: #ef4444;
+        --at-success: #10b981;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--at-dark);
+        color: var(--at-text);
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+        min-height: 100vh;
+      }
+
+      /* Admin Layout */
+      .admin-header {
+        background: rgba(9, 9, 11, 0.95);
+        border-bottom: 1px solid var(--at-border);
+        padding: 16px 32px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+      }
+      .admin-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        font-size: 20px;
+        color: #fff;
+        text-decoration: none;
+      }
+      .admin-badge {
+        background: rgba(10, 101, 252, 0.2);
+        border: 1px solid var(--at-blue);
+        color: #60a5fa;
+        font-size: 11px;
+        font-family: "JetBrains Mono", monospace;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 700;
+      }
+
+      .admin-container {
+        max-width: 1320px;
+        margin: 32px auto 60px;
+        padding: 0 24px;
+      }
+
+      /* System Status Banner */
+      .system-banner {
+        background: linear-gradient(
+          135deg,
+          rgba(20, 235, 192, 0.1),
+          rgba(10, 101, 252, 0.1)
+        );
+        border: 1px solid var(--at-border);
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      .banner-left h2 {
+        font-size: 22px;
+        font-weight: 800;
+        margin-bottom: 6px;
+      }
+      .banner-left p {
+        color: var(--at-muted);
+        font-size: 14px;
+      }
+      .status-cluster {
+        display: flex;
+        gap: 20px;
+      }
+      .cluster-node {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+      }
+      .pulse-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--at-primary);
+        box-shadow: 0 0 10px var(--at-primary);
+      }
+
+      /* 4 Metric Cards */
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+      .metric-card {
+        background: var(--at-surface);
+        border: 1px solid var(--at-border);
+        border-radius: 14px;
+        padding: 20px;
+      }
+      .metric-lbl {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--at-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+      }
+      .metric-val {
+        font-size: 32px;
+        font-weight: 800;
+        font-family: "JetBrains Mono", monospace;
+        color: #fff;
+      }
+      .metric-sub {
+        font-size: 12px;
+        color: var(--at-primary);
+        margin-top: 6px;
+        font-weight: 600;
+      }
+
+      /* Admin Tabs & Sub-Services */
+      .admin-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+      }
+
+      /* Table Container */
+      .card-box {
+        background: var(--at-surface);
+        border: 1px solid var(--at-border);
+        border-radius: 16px;
+        padding: 24px;
+      }
+      .box-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .box-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: #fff;
+      }
+
+      /* API Endpoints Live Matrix */
+      .api-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        text-align: left;
+      }
+      .api-table th {
+        padding: 10px 12px;
+        color: var(--at-muted);
+        font-weight: 600;
+        border-bottom: 1px solid var(--at-border);
+      }
+      .api-table td {
+        padding: 14px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .method-badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 4px;
+        display: inline-block;
+      }
+      .m-post {
+        background: rgba(16, 185, 129, 0.15);
+        color: #10b981;
+      }
+      .m-get {
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+      }
+      .m-put {
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+      }
+      .endpoint-path {
+        font-family: "JetBrains Mono", monospace;
+        color: #e4e4e7;
+      }
+
+      /* Quick Test API Actions */
+      .btn-test {
+        background: transparent;
+        border: 1px solid var(--at-border);
+        color: var(--at-primary);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .btn-test:hover {
+        background: var(--at-primary);
+        color: #09090b;
+      }
+
+      /* Right Side: Escrow & Matching Realtime Engine Monitor */
+      .engine-card {
+        background: #0e0e11;
+        border: 1px solid var(--at-border);
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 16px;
+      }
+      .engine-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .engine-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+      }
+      .engine-stat {
+        font-size: 12px;
+        color: var(--at-primary);
+        font-family: "JetBrains Mono";
+      }
+      .engine-bar {
+        height: 6px;
+        background: var(--at-border);
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 8px;
+      }
+      .engine-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--at-primary), var(--at-blue));
+        border-radius: 999px;
+      }
+
+      /* Admin Direct Quick Links */
+      .subpage-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .subpage-link {
+        background: #141418;
+        border: 1px solid var(--at-border);
+        border-radius: 10px;
+        padding: 12px 16px;
+        color: #fff;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.15s;
+      }
+      .subpage-link:hover {
+        border-color: var(--at-primary);
+        background: #1b1b22;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="admin-header">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <a href="../index.html" class="admin-logo">
+          go<span style="color: var(--at-primary)">live</span>.wiki
+          <span class="admin-badge">ADMIN CONSOLE</span>
+        </a>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center">
+        <!-- Universal Language Switcher Component -->
+        <div class="lang-switcher-wrap">
+          <button class="lang-btn" onclick="toggleLangDropdown()">
+            <span id="current-lang-label">🇰🇷 KO</span>
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+          <div class="lang-dropdown" id="lang-dropdown">
+            <div style="font-size:11px; font-weight:700; color:var(--at-muted); padding:4px 8px; text-transform:uppercase;">Direct Native (완전번역)</div>
+            <div class="lang-opt" onclick="switchLanguage('ko')"><span>🇰🇷 한국어</span><span class="badge">KO</span></div>
+            <div class="lang-opt" onclick="switchLanguage('en')"><span>🇺🇸 English</span><span class="badge">EN</span></div>
+            <div class="lang-opt" onclick="switchLanguage('vi')"><span>🇻🇳 Tiếng Việt</span><span class="badge">VI</span></div>
+            <div class="lang-opt" onclick="switchLanguage('ja')"><span>🇯🇵 日本語</span><span class="badge">JA</span></div>
+            <div class="lang-opt" onclick="switchLanguage('zh')"><span>🇨🇳 中文</span><span class="badge">ZH</span></div>
+            <div class="lang-opt" onclick="switchLanguage('hi')"><span>🇮🇳 हिन्दी</span><span class="badge">HI</span></div>
+            <div class="lang-opt" onclick="switchLanguage('es')"><span>🇪🇸 Español</span><span class="badge">ES</span></div>
+            <div class="lang-divider"></div>
+            <div style="font-size:11px; font-weight:700; color:var(--at-muted); padding:4px 8px; text-transform:uppercase;">기타 언어 (Google 번역)</div>
+            <div class="lang-opt" onclick="switchLanguage('google_more')"><span>🌐 More Languages...</span></div>
+          </div>
+        </div>
+        <a
+          href="06-task-detail.html"
+          style="color: var(--at-muted); text-decoration: none; font-size: 13px"
+          data-i18n="nav_task_detail"
+          >태스크 상세 화면 &rarr;</a
+        >
+        <a
+          href="04-dashboard.html"
+          style="
+            color: var(--at-primary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+          "
+          data-i18n="nav_dashboard_map"
+          >대시보드 지도 &rarr;</a
+        >
+      </div>
+    </header>
+
+    <div class="admin-container">
+      <!-- Status Banner -->
+      <div class="system-banner">
+        <div class="banner-left">
+          <h2 data-i18n="admin_banner_title">플랫폼 백엔드 & API 인프라 관제</h2>
+          <p data-i18n="admin_banner_sub">            110 서버 (185.55.240.110) · Caddy 리버스 프록시 · Express API 라우터
+            연동 현황
+          </p>
+        </div>
+        <div class="status-cluster">
+          <div class="cluster-node">
+            <span class="pulse-dot"></span>
+            <span>POSTGIS :5433 OK</span>
+          </div>
+          <div class="cluster-node">
+            <span class="pulse-dot"></span>
+            <span>REDIS :6379 OK</span>
+          </div>
+          <div class="cluster-node">
+            <span
+              class="pulse-dot"
+              style="background: #60a5fa; box-shadow: 0 0 10px #60a5fa"
+            ></span>
+            <span>CLOUDFLARE STRICT OK</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metrics Grid -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-lbl" data-i18n="admin_active_tasks">등록된 활성 의뢰 (Tasks)</div>
+          <div class="metric-val">128</div>
+          <div class="metric-sub" data-i18n="admin_14_today">+14건 오늘 신규</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-lbl" data-i18n="admin_active_offers">제안/입찰 오퍼 (Offers)</div>
+          <div class="metric-val">492</div>
+          <div class="metric-sub" data-i18n="admin_3_8_avg">태스크당 평균 3.8건</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-lbl" data-i18n="admin_escrow">에스크로 보관 대금</div>
+          <div class="metric-val">₩14.8M</div>
+          <div class="metric-sub" data-i18n="admin_18_pending_payout">지급 대기 18건</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-lbl" data-i18n="admin_verified_workers">인증 완료 워커</div>
+          <div class="metric-val">1,048</div>
+          <div class="metric-sub" data-i18n="admin_5km_realtime">반경 5km 실시간 대기</div>
+        </div>
+      </div>
+
+      <!-- Admin Main Grid -->
+      <div class="admin-grid">
+        <!-- Left: Express Backend Routes Matrix -->
+        <div class="card-box">
+          <div class="box-head">
+            <div>
+              <div class="box-title" data-i18n="admin_07_api_routes">백엔드 API 라우트 엔드포인트 관리</div>
+              <div
+                style="color: var(--at-muted); font-size: 12px; margin-top: 2px"
+                data-i18n="admin_110_server_caddy_reverse_proxy_express_a"
+              >
+                Express 백엔드 (`/opt/golivewiki/backend/src/routes`) 실시간
+                연동
+              </div>
+            </div>
+          </div>
+
+          <table class="api-table">
+            <thead>
+              <tr>
+                <th data-i18n="th_method">메서드</th>
+                <th data-i18n="th_endpoint">엔드포인트 경로</th>
+                <th data-i18n="th_desc">기능 설명</th>
+                <th data-i18n="th_auth">인증</th>
+                <th data-i18n="th_action">동작</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="method-badge m-post">POST</span></td>
+                <td><span class="endpoint-path">/api/tasks</span></td>
+                <td data-i18n="row_post_tasks_desc">새 태스크 등록 및 PostGIS 지오코딩</td>
+                <td data-i18n="admin_4_pending">JWT 필수</td>
+                <td>
+                  <button
+                    class="btn-test"
+                    onclick="runTest('/api/tasks')"
+                    data-i18n="admin_test"
+                  >
+                    호출 테스트
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-get">GET</span></td>
+                <td><span class="endpoint-path">/api/tasks</span></td>
+                <td data-i18n="row_get_tasks_desc">실시간 태스크 피드 및 위치 반경 조회</td>
+                <td data-i18n="auth_public">공개</td>
+                <td>
+                  <button
+                    class="btn-test"
+                    onclick="runTest('/api/tasks')"
+                    data-i18n="btn_query"
+                  >
+                    조회
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-put">PUT</span></td>
+                <td>
+                  <span class="endpoint-path">/api/tasks/:id/accept</span>
+                </td>
+                <td data-i18n="row_accept_desc">워커 제안 수락 및 작업 매칭 확정</td>
+                <td data-i18n="admin_4_pending">JWT 필수</td>
+                <td>
+                  <button
+                    class="btn-test"
+                    onclick="runTest('/api/tasks/accept')"
+                    data-i18n="admin_test_69"
+                  >
+                    테스트
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-post">POST</span></td>
+                <td>
+                  <span class="endpoint-path">/api/matching/rank/:taskId</span>
+                </td>
+                <td data-i18n="row_rank_desc">AI 매칭 엔진 후보 워커 순위 산출</td>
+                <td data-i18n="auth_internal_jwt">내부/JWT</td>
+                <td>
+                  <a
+                    href="08-matching.html"
+                    class="btn-test"
+                    style="text-decoration: none"
+                    data-i18n="btn_console"
+                    >콘솔 보기</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-post">POST</span></td>
+                <td><span class="endpoint-path">/api/payment/intent</span></td>
+                <td data-i18n="row_payment_desc">에스크로 결제 인텐트 생성 및 카드 승인</td>
+                <td data-i18n="admin_4_pending">JWT 필수</td>
+                <td>
+                  <a
+                    href="09-payment.html"
+                    class="btn-test"
+                    style="text-decoration: none"
+                    data-i18n="btn_payment"
+                    >결제 관리</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <td><span class="method-badge m-post">POST</span></td>
+                <td><span class="endpoint-path">/api/execution</span></td>
+                <td data-i18n="row_execution_desc">비동기 실행 큐잉 (작업 라이프사이클)</td>
+                <td data-i18n="admin_4_pending">JWT 필수</td>
+                <td>
+                  <a
+                    href="10-execution.html"
+                    class="btn-test"
+                    style="text-decoration: none"
+                    data-i18n="btn_queue"
+                    >큐 관제</a
+                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Right: Internal Engines Control -->
+        <div>
+          <div class="card-box" style="margin-bottom: 20px">
+            <div
+              class="box-title"
+              style="margin-bottom: 14px"
+              data-i18n="admin_engines_card"
+            >
+              핵심 엔진 프로세스 상태
+            </div>
+
+            <div class="engine-card">
+              <div class="engine-header">
+                <span class="engine-name" data-i18n="engine_postgis_name">PostGIS 지오 매칭 엔진</span>
+                <span class="engine-stat" data-i18n="engine_postgis_stat">99.4% 점유</span>
+              </div>
+              <div class="engine-bar">
+                <div class="engine-fill" style="width: 94%"></div>
+              </div>
+              <div
+                style="font-size: 11px; color: var(--at-muted)"
+                data-i18n="engine_postgis_desc"
+              >
+                반경 5km 워커 즉시 탐색 및 레이턴시 8ms
+              </div>
+            </div>
+
+            <div class="engine-card">
+              <div class="engine-header">
+                <span class="engine-name" data-i18n="engine_escrow_name">에스크로 안전 결제 코어</span>
+                <span class="engine-stat" data-i18n="engine_escrow_stat">정상 작동</span>
+              </div>
+              <div class="engine-bar">
+                <div
+                  class="engine-fill"
+                  style="width: 100%; background: var(--at-success)"
+                ></div>
+              </div>
+              <div
+                style="font-size: 11px; color: var(--at-muted)"
+                data-i18n="engine_escrow_desc"
+              >
+                분쟁 방지 자동 릴리즈 / 즉시 환불 지원
+              </div>
+            </div>
+
+            <div class="engine-card">
+              <div class="engine-header">
+                <span class="engine-name" data-i18n="engine_queue_name">실행 큐 워커 (Redis BullMQ)</span>
+                <span class="engine-stat" data-i18n="engine_queue_stat">대기 4건</span>
+              </div>
+              <div class="engine-bar">
+                <div class="engine-fill" style="width: 35%"></div>
+              </div>
+              <div
+                style="font-size: 11px; color: var(--at-muted)"
+                data-i18n="admin_realtime_push_notifications"
+              >
+                실시간 푸시 알림 및 상태 변경 이벤트
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Navigate to Core Modules -->
+          <div class="card-box">
+            <div class="box-title" data-i18n="admin_quicknav_title">신규 엔진 관리 바로가기</div>
+            <div class="subpage-list">
+              <a href="08-matching.html" class="subpage-link">
+                <span data-i18n="link_matching">08. AI 매칭 엔진 상세 관제</span>
+                <span>&rarr;</span>
+              </a>
+              <a href="09-payment.html" class="subpage-link">
+                <span data-i18n="link_payment">09. 결제 / 에스크로 릴리즈 관리</span>
+                <span>&rarr;</span>
+              </a>
+              <a href="10-execution.html" class="subpage-link">
+                <span data-i18n="link_execution">10. 비동기 실행 큐 & 작업 롤백</span>
+                <span>&rarr;</span>
+              </a>
+              <a href="07-my-gigs.html" class="subpage-link">
+                <span data-i18n="link_my_gigs">07. 사용자별 의뢰 현황 조회</span>
+                <span>&rarr;</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function runTest(endpoint) {
+        alert(
+          `[API TEST] ${endpoint} 모의 호출 성공!\n응답: 200 OK (Latency: 14ms)`,
+        );
+      }
+    </script>
+  <!-- Language Switcher Inline Init (matches index.html) -->
+<script>
+  function toggleLangDropdown() {
+    const d = document.getElementById("lang-dropdown");
+    if (d) d.classList.toggle("show");
+  }
+  function switchLanguage(lang) {
+    applyLanguage(lang);
+    const d = document.getElementById("lang-dropdown");
+    if (d) d.classList.remove("show");
+  }
+  window.addEventListener("click", function(e) {
+    if (!e.target.closest(".lang-switcher-wrap")) {
+      const d = document.getElementById("lang-dropdown");
+      if (d) d.classList.remove("show");
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>golive.wiki — 일 올리기 (Airtasker 4-Step Post Wizard)</title>
+    <link rel="stylesheet" href="../styles/tokens.css" />
+    <script src="../styles/i18n.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --at-primary: #14ebc0;
+        --at-blue: #0a65fc;
+        --at-dark: #09090b;
+        --at-surface: #141418;
+        --at-border: #27272a;
+        --at-text: #fafafa;
+        --at-muted: #a1a1aa;
+      }
+      body {
+        background: var(--at-dark);
+        color: var(--at-text);
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+      }
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 32px;
+        background: #0e0e11;
+        border-bottom: 1px solid var(--at-border);
+      }
+      .logo {
+        font-weight: 800;
+        font-size: 19px;
+        color: #fff;
+        text-decoration: none;
+      }
+      .logo span {
+        color: var(--at-primary);
+      }
+
+      .wizard-wrap {
+        max-width: 680px;
+        margin: 40px auto 80px;
+        padding: 0 24px;
+      }
+
+      /* Airtasker 4-Step Breadcrumbs */
+      .step-bar {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 32px;
+        position: relative;
+      }
+      .step-bar::before {
+        content: "";
+        position: absolute;
+        top: 14px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--at-border);
+        z-index: 1;
+      }
+      .step-item {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      .step-circle {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #141418;
+        border: 2px solid var(--at-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--at-muted);
+      }
+      .step-item.active .step-circle {
+        background: var(--at-primary);
+        border-color: var(--at-primary);
+        color: #09090b;
+      }
+      .step-item.done .step-circle {
+        background: var(--at-blue);
+        border-color: var(--at-blue);
+        color: #fff;
+      }
+      .step-label {
+        font-size: 12px;
+        color: var(--at-muted);
+        font-weight: 600;
+      }
+      .step-item.active .step-label {
+        color: #fff;
+      }
+
+      /* Wizard Card */
+      .wizard-card {
+        background: #141418;
+        border: 1px solid var(--at-border);
+        border-radius: 20px;
+        padding: 36px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+      }
+      .wizard-title {
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 8px;
+      }
+      .wizard-sub {
+        color: var(--at-muted);
+        font-size: 14px;
+        margin-bottom: 28px;
+        line-height: 1.5;
+      }
+
+      .field {
+        margin-bottom: 22px;
+      }
+      .field label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--at-text);
+        margin-bottom: 8px;
+      }
+      .field input,
+      .field textarea,
+      .field select {
+        width: 100%;
+        background: #0e0e11;
+        border: 1px solid var(--at-border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        color: #fff;
+        font-size: 15px;
+        outline: none;
+        box-sizing: border-box;
+        transition: border-color 0.15s;
+      }
+      .field input:focus,
+      .field textarea:focus {
+        border-color: var(--at-primary);
+      }
+      .field textarea {
+        min-height: 110px;
+        resize: vertical;
+      }
+
+      /* Date / Timing pills (Airtasker Style) */
+      .timing-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 6px;
+      }
+      .timing-btn {
+        background: #0e0e11;
+        border: 1px solid var(--at-border);
+        border-radius: 10px;
+        padding: 12px;
+        text-align: center;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--at-muted);
+      }
+      .timing-btn.active {
+        border-color: var(--at-primary);
+        background: rgba(20, 235, 192, 0.08);
+        color: var(--at-primary);
+      }
+
+      /* Budget Box */
+      .budget-box {
+        background: rgba(20, 235, 192, 0.05);
+        border: 1px solid rgba(20, 235, 192, 0.2);
+        border-radius: 12px;
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-top: 24px;
+      }
+      .budget-input-wrap {
+        flex: 1;
+        position: relative;
+      }
+      .budget-symbol {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--at-primary);
+        font-weight: 800;
+        font-size: 18px;
+      }
+      .budget-input {
+        padding-left: 38px !important;
+        font-size: 18px !important;
+        font-weight: 700;
+        color: var(--at-primary) !important;
+      }
+
+      .wizard-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 36px;
+        padding-top: 24px;
+        border-top: 1px solid var(--at-border);
+      }
+      .btn-submit {
+        background: var(--at-primary);
+        color: #09090b;
+        font-weight: 800;
+        font-size: 15px;
+        padding: 12px 28px;
+        border-radius: 999px;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(20, 235, 192, 0.3);
+      }
+      .btn-back {
+        color: var(--at-muted);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="nav">
+      <a href="../index.html" class="logo">go<span>live</span>.wiki</a>
+      <div class="lang-switcher-wrap">
+        <button class="lang-btn" onclick="toggleLangDropdown()">
+          <span id="current-lang-label">🇰🇷 KO</span>
+          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <div class="lang-dropdown" id="lang-dropdown">
+          <div style="font-size:11px; font-weight:700; color:var(--at-muted); padding:4px 8px; text-transform:uppercase;">Direct Native (완전번역)</div>
+          <div class="lang-opt" onclick="switchLanguage('ko')"><span>🇰🇷 한국어</span><span class="badge">KO</span></div>
+          <div class="lang-opt" onclick="switchLanguage('en')"><span>🇺🇸 English</span><span class="badge">EN</span></div>
+          <div class="lang-opt" onclick="switchLanguage('vi')"><span>🇻🇳 Tiếng Việt</span><span class="badge">VI</span></div>
+          <div class="lang-opt" onclick="switchLanguage('ja')"><span>🇯🇵 日本語</span><span class="badge">JA</span></div>
+          <div class="lang-opt" onclick="switchLanguage('zh')"><span>🇨🇳 中文</span><span class="badge">ZH</span></div>
+          <div class="lang-opt" onclick="switchLanguage('hi')"><span>🇮🇳 हिन्दी</span><span class="badge">HI</span></div>
+          <div class="lang-opt" onclick="switchLanguage('es')"><span>🇪🇸 Español</span><span class="badge">ES</span></div>
+          <div class="lang-divider"></div>
+          <div style="font-size:11px; font-weight:700; color:var(--at-muted); padding:4px 8px; text-transform:uppercase;">기타 언어 (Google 번역)</div>
+          <div class="lang-opt" onclick="switchLanguage('google_more')"><span>🌐 More Languages...</span></div>
+        </div>
+      </div>
+      <a
+        href="04-dashboard.html"
+        style="color: var(--at-muted); text-decoration: none; font-size: 14px"
+        data-i18n="nav_cancel_exit"
+        >취소하고 나가기</a
+      >
+    </header>
+
+    <div class="wizard-wrap">
+      <!-- Airtasker 4 Step Bar -->
+      <div class="step-bar">
+        <div class="step-item done">
+          <div class="step-circle">✓</div>
+          <div class="step-label" data-i18n="step_basic">기본 정보</div>
+        </div>
+        <div class="step-item active">
+          <div class="step-circle">2</div>
+          <div class="step-label" data-i18n="step_schedule">일정 & 장소</div>
+        </div>
+        <div class="step-item">
+          <div class="step-circle">3</div>
+          <div class="step-label" data-i18n="step_details">상세 내용</div>
+        </div>
+        <div class="step-item">
+          <div class="step-circle">4</div>
+          <div class="step-label" data-i18n="step_budget">예산 설정</div>
+        </div>
+      </div>
+
+      <div class="wizard-card">
+        <h1 class="wizard-title" data-i18n="wizard_title">어떤 작업이 필요하신가요?</h1>
+        <p class="wizard-sub" data-i18n="wizard_sub">
+          구체적으로 적어주실수록 동네 전문 워커에게 정확하고 합리적인
+          제안(Offer)을 빠르게 받을 수 있습니다.
+        </p>
+
+        <div class="field">
+          <label data-i18n="label_title">작업 제목</label>
+          <input
+            type="text"
+            data-i18n-ph="ph_title"
+            placeholder="예: 논현동 원룸 입주 청소 및 창틀 먼지 제거"
+          />
+        </div>
+
+        <div class="field">
+          <label data-i18n="label_category">카테고리 선택</label>
+          <select>
+            <option>🧹 홈 & 오피스 청소</option>
+            <option>📦 이사 & 용달 운반</option>
+            <option>🔧 가구 조립 및 인테리어 수리</option>
+            <option>💻 IT / 웹 개발 / 컴퓨터 점검</option>
+            <option>🎨 디자인 & 사진 촬영</option>
+            <option>🐕 반려동물 산책 및 돌봄</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label data-i18n="label_schedule">희망 일정</label>
+          <div class="timing-grid">
+            <div class="timing-btn active" data-i18n="timing_today">오늘 즉시</div>
+            <div class="timing-btn" data-i18n="timing_specific">특정 날짜 지정</div>
+            <div class="timing-btn" data-i18n="timing_negotiable">워커와 조율 가능</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="label_location">작업 장소 (주소 입력 시 PostGIS 자동 좌표 변환)</label>
+          <input
+            type="text"
+            data-i18n-ph="ph_location"
+            placeholder="예: 서울특별시 강남구 테헤란로 152"
+          />
+          <div
+            style="
+              margin-top: 8px;
+              font-size: 12px;
+              font-family: &quot;JetBrains Mono&quot;;
+              color: var(--at-primary);
+            "
+            data-i18n="geocoded_note"
+          >
+            📍 PostGIS Geocoded: lat 37.5000, lng 127.0365 (반경 5km 워커들에게
+            실시간 소켓 푸시)
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="label_request_detail">상세 요청 사항</label>
+          <textarea
+            data-i18n-ph="ph_request_detail"
+            placeholder="작업 공간 평수, 도구 준비 여부, 주차 가능 여부 등 워커가 알아야 할 상세 사항을 기재해 주세요."
+          ></textarea>
+        </div>
+
+        <!-- Airtasker Budget Input -->
+        <div class="budget-box">
+          <div>
+            <div
+              style="font-size: 14px; font-weight: 700; color: #fff"
+              data-i18n="label_budget"
+            >
+              희망 예산 (총액)
+            </div>
+            <div
+              style="font-size: 12px; color: var(--at-muted); margin-top: 2px"
+              data-i18n="budget_hint"
+            >
+              워커 제안에 따라 조율 가능
+            </div>
+          </div>
+          <div class="budget-input-wrap">
+            <span class="budget-symbol">₩</span>
+            <input
+              type="number"
+              class="budget-input"
+              value="85000"
+              placeholder="0"
+            />
+          </div>
+        </div>
+
+        <div class="wizard-actions">
+          <a
+            href="04-dashboard.html"
+            class="btn-back"
+            data-i18n="btn_back_dashboard"
+            >&larr; 대시보드로 돌아가기</a
+          >
+          <a
+            href="06-task-detail.html"
+            class="btn-submit"
+            data-i18n="btn_free_post"
+            >무료로 일 등록하기</a
+          >
+        </div>
+      </div>
+    </div>
+  <!-- Language Switcher Inline Init (matches index.html) -->
+<script>
+  function toggleLangDropdown() {
+    const d = document.getElementById("lang-dropdown");
+    if (d) d.classList.toggle("show");
+  }
+  function switchLanguage(lang) {
+    applyLanguage(lang);
+    const d = document.getElementById("lang-dropdown");
+    if (d) d.classList.remove("show");
+  }
+  window.addEventListener("click", function(e) {
+    if (!e.target.closest(".lang-switcher-wrap")) {
+      const d = document.getElementById("lang-dropdown");
+      if (d) d.classList.remove("show");
+    }
+  });
+</script>
+
+</body>
+</html>

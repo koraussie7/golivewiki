@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>golive.wiki — 태스크 상세 & 오퍼 시스템 (Airtasker Style)</title>
+    <link rel="stylesheet" href="../styles/tokens.css" />
+    <script src="../styles/i18n.js" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --at-primary: #14ebc0;
+        --at-blue: #0a65fc;
+        --at-dark: #09090b;
+        --at-surface: #141418;
+        --at-card-bg: #18181d;
+        --at-border: #27272a;
+        --at-text: #fafafa;
+        --at-muted: #a1a1aa;
+        --at-gold: #f59e0b;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--at-dark);
+        color: var(--at-text);
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+        line-height: 1.5;
+      }
+
+      /* Global Nav */
+      header.global-nav {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(9, 9, 11, 0.95);
+        backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--at-border);
+        padding: 12px 24px;
+      }
+      .nav-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .logo {
+        font-weight: 800;
+        font-size: 20px;
+        color: #fff;
+        text-decoration: none;
+      }
+      .logo span {
+        color: var(--at-primary);
+      }
+
+      /* Main Container: Airtasker 2-Column Split (Detail & Make Offer) */
+      .detail-wrap {
+        max-width: 1200px;
+        margin: 32px auto 80px;
+        padding: 0 24px;
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 32px;
+        align-items: start;
+      }
+
+      /* Left Main Content */
+      .task-main {
+        background: var(--at-surface);
+        border: 1px solid var(--at-border);
+        border-radius: 20px;
+        padding: 32px;
+      }
+      .task-status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+      }
+      .status-badge-open {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(20, 235, 192, 0.12);
+        color: var(--at-primary);
+        padding: 5px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+      .status-badge-open::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        background: var(--at-primary);
+        border-radius: 50%;
+      }
+
+      .task-title {
+        font-size: 28px;
+        font-weight: 800;
+        line-height: 1.25;
+        margin-bottom: 20px;
+        color: #fff;
+      }
+
+      /* Poster info (Airtasker Profile Badge) */
+      .poster-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 16px;
+        background: #0e0e11;
+        border: 1px solid var(--at-border);
+        border-radius: 12px;
+        margin-bottom: 28px;
+      }
+      .poster-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: var(--at-card-bg);
+        border: 1px solid var(--at-border);
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        color: var(--at-primary);
+        font-size: 17px;
+      }
+      .poster-meta .name {
+        font-weight: 700;
+        font-size: 15px;
+        color: #fff;
+      }
+      .poster-meta .sub {
+        font-size: 12px;
+        color: var(--at-muted);
+        margin-top: 2px;
+      }
+
+      /* Key Task Facts Grid */
+      .task-facts {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+        margin-bottom: 32px;
+      }
+      .fact-box {
+        background: #0e0e11;
+        border: 1px solid var(--at-border);
+        border-radius: 12px;
+        padding: 16px;
+      }
+      .fact-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--at-muted);
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+      }
+      .fact-val {
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      /* Task Description */
+      .section-label {
+        font-size: 17px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: #fff;
+      }
+      .task-description {
+        color: #d4d4d8;
+        font-size: 15px;
+        line-height: 1.7;
+        margin-bottom: 36px;
+        white-space: pre-line;
+      }
+
+      /* Offers (Bids) Section (Airtasker Signature) */
+      .offers-section {
+        border-top: 1px solid var(--at-border);
+        padding-top: 32px;
+      }
+      .offers-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .offers-count {
+        font-size: 18px;
+        font-weight: 800;
+        color: #fff;
+      }
+      .offer-card {
+        background: #0e0e11;
+        border: 1px solid var(--at-border);
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        transition: border-color 0.15s;
+      }
+      .offer-card:hover {
+        border-color: var(--at-primary);
+      }
+      .offer-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+      .worker-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .worker-av {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #27272a;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .worker-details .w-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+      }
+      .worker-details .w-rating {
+        font-size: 12px;
+        color: var(--at-gold);
+        font-weight: 600;
+        margin-top: 2px;
+      }
+      .offer-price {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--at-primary);
+      }
+      .offer-msg {
+        font-size: 14px;
+        color: #a1a1aa;
+        line-height: 1.5;
+        background: #141418;
+        padding: 12px 14px;
+        border-radius: 8px;
+      }
+      .offer-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      }
+      .btn-accept-offer {
+        background: var(--at-primary);
+        color: #09090b;
+        font-weight: 700;
+        font-size: 13px;
+        padding: 8px 18px;
+        border-radius: 999px;
+        text-decoration: none;
+        cursor: pointer;
+        border: none;
+      }
+
+      /* Right Sticky Sidebar: Budget & Make Offer Action */
+      .side-card {
+        position: sticky;
+        top: 96px;
+        background: var(--at-surface);
+        border: 1px solid var(--at-border);
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+      }
+      .side-budget-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--at-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .side-budget-price {
+        font-size: 38px;
+        font-weight: 800;
+        color: var(--at-primary);
+        margin: 4px 0 16px;
+      }
+      .btn-make-offer {
+        width: 100%;
+        background: var(--at-primary);
+        color: #09090b;
+        font-weight: 800;
+        font-size: 16px;
+        padding: 14px 0;
+        border-radius: 999px;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        box-shadow: 0 4px 16px rgba(20, 235, 192, 0.25);
+        margin-bottom: 14px;
+        cursor: pointer;
+        border: none;
+      }
+      .escrow-guarantee {
+        background: #0e0e11;
+        border: 1px solid var(--at-border);
+        border-radius: 12px;
+        padding: 14px;
+        font-size: 12px;
+        color: var(--at-muted);
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        line-height: 1.5;
+      }
+      .escrow-icon {
+        width: 18px;
+        height: 18px;
+        color: var(--at-primary);
+        flex-shrink: 0;
+      }
+
+      /* Live Offer Input Modal / Accordion */
+      .offer-form-box {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid var(--at-border);
+      }
+      .offer-input {
+        width: 100%;
+        background: #0e0e11;
+        border: 1px solid var(--at-border);
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: #fff;
+        font-size: 14px;
+        margin-bottom: 10px;
+        outline: none;
+      }
+      .offer-input:focus {
+        border-color: var(--at-primary);
+      }
+
+      @media (max-width: 900px) {
+        .detail-wrap {
+          grid-template-columns: 1fr;
+        }
+        .task-facts {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="global-nav">
+      <div class="nav-inner">
+        <a href="../index.html" class="logo">go<span>live</span>.wiki</a>
+        <div style="display: flex; gap: 14px; align-items: center">
+          <!-- Universal Language Switcher Component -->
+          <div class="lang-switcher-wrap">
+            <button class="lang-btn" onclick="toggleLangDropdown()">
+              <span id="current-lang-label">🇰🇷 KO</span>
+              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div class="lang-dropdown" id="lang-dropdown">
+              <div style="font-size:11px; font-weight:700; color:var(--at-muted); padding:4px 8px; text-transform:uppercase;">Direct Native (완전번역)</div>
+              <div class="lang-opt" onclick="switchLanguage('ko')"><span>🇰🇷 한국어</span><span class="badge">KO</span></div>
+              <div class="lang-opt" onclick="switchLanguage('en')"><span>🇺🇸 English</span><span class="badge">EN</span></div>
+              <div class="lang-opt" onclick="switchLanguage('vi')"><span>🇻🇳 Tiếng Việt</span><span class="badge">VI</span></div>
+              <div class="lang-opt" onclick="switchLanguage('ja')"><span>🇯🇵 日本語</span><span class="badge">JA</span></div>
+              <div class="lang-opt" onclick="switchLanguage('zh')"><span>🇨🇳 中文</span><span class="badge">ZH</span></div>
+              <div class="lang-opt" onclick="switchLanguage('hi')"><span>🇮🇳 हिन्दी</span><span class="badge">HI</span></div>
+              <div class="lang-opt" onclick="switchLanguage('es')"><span>🇪🇸 Español</span><span class="badge">ES</span></div>
+              <div class="lang-divider"></div>
+              <div style="font-size:11px; font-weight:700; color:var(--at-muted); padding:4px 8px; text-transform:uppercase;">기타 언어 (Google 번역)</div>
+              <div class="lang-opt" onclick="switchLanguage('google_more')"><span>🌐 More Languages...</span></div>
+            </div>
+          </div>
+          <a
+            href="04-dashboard.html"
+            style="
+              color: var(--at-muted);
+              text-decoration: none;
+              font-size: 14px;
+              font-weight: 600;
+            "
+            data-i18n="nav_back_dashboard"
+            >&larr; 대시보드 목록</a
+          >
+          <a
+            href="admin.html"
+            style="
+              color: var(--at-primary);
+              text-decoration: none;
+              font-size: 13px;
+              font-weight: 700;
+              border: 1px solid var(--at-primary);
+              padding: 4px 10px;
+              border-radius: 999px;
+            "
+            data-i18n="nav_admin"
+            >관리자 콘솔</a
+          >
+        </div>
+      </div>
+    </header>
+
+    <div class="detail-wrap">
+      <!-- Left: Main Task Details & Live Offers -->
+      <main class="task-main">
+        <div class="task-status-row">
+          <span class="status-badge-open" data-i18n="status_open">OPEN FOR OFFERS</span>
+          <span
+            style="
+              font-size: 13px;
+              color: var(--at-muted);
+              font-family: &quot;JetBrains Mono&quot;;
+            "
+            >TASK #GW-7429</span
+          >
+        </div>
+
+        <h1 class="task-title" data-i18n="task_main_title">
+          강남구 논현동 원룸 입주 청소 및 창틀 먼지 완벽 제거
+        </h1>
+
+        <!-- Poster Profile -->
+        <div class="poster-card">
+          <div class="poster-avatar">김</div>
+          <div class="poster-meta">
+            <div class="name" data-i18n="poster_name">김민지 (의뢰인)</div>
+            <div class="sub" data-i18n="poster_meta">
+              서울 강남구 거주 · 본인 인증 완료 · 의뢰 5건 완료
+            </div>
+          </div>
+        </div>
+
+        <!-- Task Key Facts -->
+        <div class="task-facts">
+          <div class="fact-box">
+            <div class="fact-label" data-i18n="fact_loc">위치</div>
+            <div class="fact-val" data-i18n="task_main_loc">📍 서울 강남구 논현동 (1.4km)</div>
+          </div>
+          <div class="fact-box">
+            <div class="fact-label" data-i18n="fact_time">희망 일시</div>
+            <div class="fact-val" data-i18n="task_main_time">⏰ 오늘 오후 2시 (2시간 예상)</div>
+          </div>
+          <div class="fact-box">
+            <div class="fact-label" data-i18n="fact_pay">결제 방식</div>
+            <div class="fact-val" data-i18n="task_main_pay">🛡️ 에스크로 안전 결제</div>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div class="section-label" data-i18n="details_label">요청 상세 내용</div>
+        <div class="task-description">
+          안녕하세요! 오늘 새로 이사 들어가는 10평 원룸 입주 청소를
+          부탁드립니다. - 바닥 물걸레 청소 및 먼지 흡입 - 창틀 미세먼지 및 찌든
+          때 제거 (베란다 1개 포함) - 주방 싱크대 및 화장실 세면대/변기 기본
+          소독 - 청소 도구는 집에 구비되어 있지 않아 전문 클리너분께서 지참해
+          주시면 감사하겠습니다. 시간 약속 잘 지켜주시고 꼼꼼하게 봐주실 분
+          환영합니다!
+        </div>
+
+        <!-- Offers (Bids) Feed (Airtasker Signature) -->
+        <section class="offers-section">
+          <div class="offers-header">
+            <div class="offers-count">
+              <span data-i18n="offers_label">받은 제안 (Offers)</span>
+              <span style="color: var(--at-primary)" data-i18n="offers_count_2">2건</span>
+            </div>
+            <span
+              style="font-size: 12px; color: var(--at-muted)"
+              data-i18n="offers_compare_hint"
+              >워커 평점과 제안 가격을 비교해보세요</span
+            >
+          </div>
+
+          <div id="offers-list">
+            <!-- Offer 1 -->
+            <div class="offer-card">
+              <div class="offer-top">
+                <div class="worker-info">
+                  <div class="worker-av">이</div>
+                  <div class="worker-details">
+                    <div class="w-name">
+                      <span data-i18n="worker_1_name">이민우 프로</span>
+                      <span
+                        style="
+                          font-size: 11px;
+                          color: var(--at-primary);
+                          background: rgba(20, 235, 192, 0.1);
+                          padding: 2px 6px;
+                          border-radius: 4px;
+                        "
+                        data-i18n="worker_pro_badge"
+                        >전문가 인증</span
+                      >
+                    </div>
+                    <div class="w-rating" data-i18n="worker_1_rating">
+                      ★ 4.9 (청소 리뷰 84개) · 반경 1.2km
+                    </div>
+                  </div>
+                </div>
+                <div class="offer-price">₩85,000</div>
+              </div>
+              <div class="offer-msg" data-i18n="offer_1_msg">
+                "독일제 친환경 세제와 고성능 스팀 청소기 지참하여 방문드립니다.
+                원룸 입주 청소 경험 많으니 믿고 맡겨주세요! 오후 2시 즉시 착수
+                가능합니다."
+              </div>
+              <div class="offer-actions">
+                <a href="09-payment.html" class="btn-accept-offer" data-i18n="btn_accept_offer"
+                  >제안 수락 & 에스크로 결제 &rarr;</a
+                >
+              </div>
+            </div>
+
+            <!-- Offer 2 -->
+            <div class="offer-card">
+              <div class="offer-top">
+                <div class="worker-info">
+                  <div class="worker-av">박</div>
+                  <div class="worker-details">
+                    <div class="w-name" data-i18n="worker_2_name">박정훈 클린</div>
+                    <div class="w-rating" data-i18n="worker_2_rating">
+                      ★ 4.8 (청소 리뷰 32개) · 반경 2.5km
+                    </div>
+                  </div>
+                </div>
+                <div class="offer-price">₩80,000</div>
+              </div>
+              <div class="offer-msg" data-i18n="offer_2_msg">
+                "창틀과 화장실 살균까지 꼼꼼하게 소독해 드립니다. 오후 2시
+                30분경 도착 가능합니다."
+              </div>
+              <div class="offer-actions">
+                <a href="09-payment.html" class="btn-accept-offer" data-i18n="btn_accept_offer"
+                  >제안 수락 & 에스크로 결제 &rarr;</a
+                >
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Right: Sticky Make an Offer Widget -->
+      <aside class="side-card">
+        <div class="side-budget-label" data-i18n="task_budget_title">의뢰인 희망 예산</div>
+        <div class="side-budget-price">₩85,000</div>
+
+        <!-- Live Offer Form -->
+        <div class="offer-form-box">
+          <div
+            style="font-size: 14px; font-weight: 700; margin-bottom: 8px"
+            data-i18n="make_offer_title"
+          >
+            이 작업에 오퍼 제안하기
+          </div>
+          <input
+            type="number"
+            id="offer-price-input"
+            class="offer-input"
+            data-i18n-ph="make_offer_ph_price"
+            placeholder="희망 제안 금액 (예: 85000)"
+          />
+          <textarea
+            id="offer-msg-input"
+            class="offer-input"
+            style="min-height: 80px"
+            data-i18n-ph="make_offer_ph_msg"
+            placeholder="작업 가능 시간, 보유 장비, 강점 등을 작성하세요"
+          ></textarea>
+          <button
+            class="btn-make-offer"
+            onclick="submitOffer()"
+            data-i18n="btn_submit_offer"
+          >
+            제안(Offer) 제출하기
+          </button>
+        </div>
+
+        <div class="escrow-guarantee">
+          <svg
+            class="escrow-icon"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+            ></path>
+          </svg>
+          <div>
+            <strong data-i18n="escrow_title">Airtasker 안심 에스크로 결제</strong><br />
+            <span data-i18n="escrow_notice">작업이 만족스럽게 완료되어 의뢰인이 승인할 때까지 결제 대금은
+            플랫폼에 안전하게 보호됩니다.</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      function submitOffer() {
+        const price = document.getElementById("offer-price-input").value;
+        const msg = document.getElementById("offer-msg-input").value;
+
+        if (!price || !msg) {
+          alert("제안 금액과 메시지를 입력해 주세요.");
+          return;
+        }
+
+        const formattedPrice = Number(price).toLocaleString();
+        const newOfferHtml = `
+      <div class="offer-card" style="border-color:var(--at-primary); animation:fadeIn 0.3s ease;">
+        <div class="offer-top">
+          <div class="worker-info">
+            <div class="worker-av" style="background:var(--at-primary); color:#09090B;">나</div>
+            <div class="worker-details">
+              <div class="w-name">내 프로필 (새 오퍼 제출됨)</div>
+              <div class="w-rating">방금 전 제출 · 매칭 엔진 대기 중</div>
+            </div>
+          </div>
+          <div class="offer-price">₩${formattedPrice}</div>
+        </div>
+        <div class="offer-msg">"${msg}"</div>
+        <div class="offer-actions">
+          <span style="font-size:12px; color:var(--at-primary); font-weight:600; padding:6px 12px; background:rgba(20,235,192,0.1); border-radius:999px;">
+            ✓ 오퍼 등록 완료 (의뢰인 검토 중)
+          </span>
+        </div>
+      </div>
+    `;
+
+        document
+          .getElementById("offers-list")
+          .insertAdjacentHTML("afterbegin", newOfferHtml);
+        document.getElementById("offer-price-input").value = "";
+        document.getElementById("offer-msg-input").value = "";
+        alert("새 오퍼(제안)가 성공적으로 등록되었습니다!");
+      }
+    </script>
+  <!-- Language Switcher Inline Init (matches index.html) -->
+<script>
+  function toggleLangDropdown() {
+    const d = document.getElementById("lang-dropdown");
+    if (d) d.classList.toggle("show");
+  }
+  function switchLanguage(lang) {
+    applyLanguage(lang);
+    const d = document.getElementById("lang-dropdown");
+    if (d) d.classList.remove("show");
+  }
+  window.addEventListener("click", function(e) {
+    if (!e.target.closest(".lang-switcher-wrap")) {
+      const d = document.getElementById("lang-dropdown");
+      if (d) d.classList.remove("show");
+    }
+  });
+</script>
+
+</body>
+</html>
