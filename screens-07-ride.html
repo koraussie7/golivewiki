@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>golive.wiki — 서비스 호출 (인기 카테고리 + inDrive 협상)</title>
+    <link rel="stylesheet" href="./styles/tokens.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""
+    />
+    <script src="./styles/i18n.js" defer></script>
+    <style>
+      body {
+        background: #0a0a0c;
+        color: #fafafa;
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+        margin: 0;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 24px;
+        background: #0f0f12;
+        border-bottom: 1px solid #27272a;
+      }
+      .topbar .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        font-size: 18px;
+      }
+      .topbar .brand span.c {
+        color: #14ebc0;
+      }
+      .topbar .brand .pill {
+        background: rgba(20, 235, 192, 0.15);
+        color: #14ebc0;
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+      }
+      .topbar-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .btn-back {
+        background: transparent;
+        border: 1px solid #27272a;
+        color: #fafafa;
+        padding: 6px 12px;
+        border-radius: 999px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .btn-back:hover { border-color: #14ebc0; }
+      .step-bar {
+        display: flex;
+        gap: 8px;
+        padding: 14px 24px;
+        background: #0f0f12;
+        border-bottom: 1px solid #1f1f23;
+      }
+      .step-pill {
+        flex: 1;
+        padding: 10px 12px;
+        background: #141418;
+        border: 1px solid #27272a;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #71717a;
+        text-align: center;
+        transition: all 0.2s;
+      }
+      .step-pill.active {
+        background: rgba(20, 235, 192, 0.1);
+        border-color: #14ebc0;
+        color: #14ebc0;
+      }
+      .step-pill.done {
+        background: rgba(20, 235, 192, 0.05);
+        border-color: rgba(20, 235, 192, 0.3);
+        color: rgba(20, 235, 192, 0.7);
+      }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .step { display: none; }
+      .step.active { display: block; }
+      h1.page-title {
+        font-size: 28px;
+        font-weight: 800;
+        margin: 0 0 4px;
+      }
+      .page-sub {
+        color: #a1a1aa;
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+      /* === STEP 1: Category grid === */
+      .cat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 12px;
+      }
+      .cat-card {
+        background: #141418;
+        border: 1px solid #27272a;
+        border-radius: 16px;
+        padding: 16px 14px;
+        cursor: pointer;
+        transition: all 0.15s;
+        position: relative;
+      }
+      .cat-card:hover {
+        border-color: #14ebc0;
+        transform: translateY(-2px);
+      }
+      .cat-card .badge-top {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: rgba(245, 158, 11, 0.15);
+        color: #f59e0b;
+      }
+      .cat-card .emoji {
+        font-size: 32px;
+        margin-bottom: 8px;
+      }
+      .cat-card .name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #fafafa;
+        margin-bottom: 4px;
+      }
+      .cat-card .desc {
+        font-size: 11px;
+        color: #a1a1aa;
+        line-height: 1.4;
+        min-height: 30px;
+      }
+      .cat-card .avg {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #14ebc0;
+        font-weight: 700;
+        font-family: "JetBrains Mono", monospace;
+      }
+      /* === STEP 2: Form === */
+      .form-card {
+        background: #141418;
+        border: 1px solid #27272a;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 16px;
+      }
+      .form-card h2 {
+        font-size: 18px;
+        font-weight: 800;
+        margin: 0 0 16px;
+      }
+      .form-row {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .form-row > * { flex: 1; }
+      label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        color: #a1a1aa;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      input[type=text], input[type=number], textarea, select {
+        width: 100%;
+        background: #0f0f12;
+        border: 1px solid #27272a;
+        color: #fafafa;
+        padding: 12px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+      textarea { min-height: 80px; resize: vertical; }
+      input:focus, textarea:focus, select:focus {
+        outline: none;
+        border-color: #14ebc0;
+      }
+      .offer-slider-wrap {
+        background: #0f0f12;
+        border: 1px solid #27272a;
+        border-radius: 12px;
+        padding: 16px;
+        margin: 12px 0;
+      }
+      .offer-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .offer-row .label-sm {
+        font-size: 11px;
+        font-weight: 700;
+        color: #71717a;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .offer-row .price {
+        font-size: 22px;
+        font-weight: 800;
+        color: #14ebc0;
+        font-family: "JetBrains Mono", monospace;
+      }
+      .offer-row .price.suggested {
+        font-size: 14px;
+        color: #f59e0b;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      input[type=range] {
+        flex: 1;
+        accent-color: #14ebc0;
+      }
+      .slider-value {
+        background: #141418;
+        border: 1px solid #14ebc0;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-family: "JetBrains Mono", monospace;
+        font-weight: 700;
+        font-size: 14px;
+        color: #14ebc0;
+        min-width: 100px;
+        text-align: center;
+      }
+      .btn-primary {
+        background: #14ebc0;
+        color: #0a0a0c;
+        border: none;
+        padding: 14px 24px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 15px;
+        cursor: pointer;
+        width: 100%;
+      }
+      .btn-primary:hover { background: #18ffd1; }
+      .btn-secondary {
+        background: transparent;
+        border: 1px solid #27272a;
+        color: #fafafa;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      /* === STEP 3: inDrive counter-offers === */
+      .negotiation-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        padding: 16px 20px;
+        background: rgba(20, 235, 192, 0.05);
+        border: 1px solid rgba(20, 235, 192, 0.3);
+        border-radius: 14px;
+      }
+      .negotiation-header .badge {
+        background: #14ebc0;
+        color: #0a0a0c;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      .offer-card {
+        background: #141418;
+        border: 1px solid #27272a;
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 12px;
+      }
+      .offer-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+      .worker-av {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #14ebc0, #0ea5e9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: 800;
+        color: #0a0a0c;
+      }
+      .worker-info { flex: 1; }
+      .worker-name { font-weight: 700; font-size: 14px; }
+      .worker-rating { font-size: 12px; color: #f59e0b; }
+      .worker-meta { font-size: 11px; color: #a1a1aa; margin-top: 2px; }
+      .price-row {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        padding: 12px 0;
+        border-top: 1px solid #1f1f23;
+        border-bottom: 1px solid #1f1f23;
+        margin-bottom: 12px;
+      }
+      .price-row .yours {
+        font-size: 12px;
+        color: #a1a1aa;
+        font-family: "JetBrains Mono", monospace;
+      }
+      .price-row .theirs {
+        font-size: 24px;
+        font-weight: 800;
+        color: #fafafa;
+        font-family: "JetBrains Mono", monospace;
+        margin-left: auto;
+      }
+      .price-row .arrow {
+        color: #14ebc0;
+        font-size: 18px;
+      }
+      .counter-form {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .counter-form input { flex: 1; }
+      .counter-form button { white-space: nowrap; }
+      .offer-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .btn-accept {
+        background: #14ebc0;
+        color: #0a0a0c;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        flex: 1;
+      }
+      .btn-decline {
+        background: transparent;
+        border: 1px solid #27272a;
+        color: #a1a1aa;
+        padding: 10px 16px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .pulse {
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+      .pulse-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: #14ebc0;
+        border-radius: 50%;
+        margin-right: 6px;
+        box-shadow: 0 0 8px #14ebc0;
+        animation: pulse 1.5s infinite;
+      }
+      .lang-switcher-wrap {
+        position: relative;
+        display: inline-block;
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+      }
+      .lang-btn {
+        background: #141418;
+        border: 1px solid #27272a;
+        color: #fafafa;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .lang-btn:hover { border-color: #14ebc0; }
+      .lang-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        background: #141418;
+        border: 1px solid #27272a;
+        border-radius: 14px;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+        width: 220px;
+        padding: 8px;
+        display: none;
+        z-index: 9999;
+      }
+      .lang-dropdown.show { display: block; }
+      .lang-opt {
+        padding: 8px 10px;
+        cursor: pointer;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13px;
+      }
+      .lang-opt:hover { background: rgba(20, 235, 192, 0.1); }
+      .lang-opt .badge {
+        font-size: 10px;
+        background: #27272a;
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: #a1a1aa;
+      }
+      .lang-divider {
+        height: 1px;
+        background: #27272a;
+        margin: 6px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand">
+        go<span class="c">live</span>.wiki
+        <span class="pill">SERVICE REQUEST</span>
+      </div>
+      <div class="topbar-actions">
+        <!-- Universal Language Switcher -->
+        <div class="lang-switcher-wrap">
+          <button class="lang-btn" onclick="toggleLangDropdown()">
+            <span id="current-lang-label">🇰🇷 KO</span>
+            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+          <div class="lang-dropdown" id="lang-dropdown">
+            <div style="font-size:11px; font-weight:700; color:#a1a1aa; padding:4px 8px; text-transform:uppercase;">Direct Native</div>
+            <div class="lang-opt" onclick="switchLanguage('ko')"><span>🇰🇷 한국어</span><span class="badge">KO</span></div>
+            <div class="lang-opt" onclick="switchLanguage('en')"><span>🇺🇸 English</span><span class="badge">EN</span></div>
+            <div class="lang-opt" onclick="switchLanguage('vi')"><span>🇻🇳 Tiếng Việt</span><span class="badge">VI</span></div>
+            <div class="lang-opt" onclick="switchLanguage('ja')"><span>🇯🇵 日本語</span><span class="badge">JA</span></div>
+            <div class="lang-opt" onclick="switchLanguage('zh')"><span>🇨🇳 中文</span><span class="badge">ZH</span></div>
+            <div class="lang-opt" onclick="switchLanguage('hi')"><span>🇮🇳 हिन्दी</span><span class="badge">HI</span></div>
+            <div class="lang-opt" onclick="switchLanguage('es')"><span>🇪🇸 Español</span><span class="badge">ES</span></div>
+            <div class="lang-divider"></div>
+            <div style="font-size:11px; font-weight:700; color:#a1a1aa; padding:4px 8px; text-transform:uppercase;">Google Translate</div>
+            <div class="lang-opt" onclick="switchLanguage('google_more')"><span>🌐 More Languages...</span></div>
+          </div>
+        </div>
+        <a href="./index.html" class="btn-back" data-i18n="nav_home">&larr; 메인으로</a>
+      </div>
+    </div>
+
+    <!-- Step progress bar -->
+    <div class="step-bar">
+      <div class="step-pill active" id="step-pill-1" data-i18n="ride_step1">1. 카테고리 선택</div>
+      <div class="step-pill" id="step-pill-2" data-i18n="ride_step2">2. 의뢰 내용 + 내 제안가</div>
+      <div class="step-pill" id="step-pill-3" data-i18n="ride_step3">3. 카운터오퍼 협상</div>
+    </div>
+
+    <div class="container">
+      <!-- STEP 1: Category selection grid -->
+      <div class="step active" id="step-1">
+        <h1 class="page-title" data-i18n="ride_step1_title">어떤 서비스가 필요하신가요?</h1>
+        <p class="page-sub" data-i18n="ride_step1_sub">가장 인기 있는 카테고리 18개에서 선택하세요. inDrive 스타일로 여러 기사에게 동시에 카운터오퍼를 받습니다.</p>
+        <div class="cat-grid" id="cat-grid"></div>
+      </div>
+
+      <!-- STEP 2: Form (per-category) -->
+      <div class="step" id="step-2">
+        <h1 class="page-title"><span id="form-cat-emoji"></span> <span id="form-cat-name"></span></h1>
+        <p class="page-sub" data-i18n="ride_step2_sub">작업 내용과 희망 가격을 입력하세요. 기사들이 카운터오퍼를 보냅니다.</p>
+
+        <div class="form-card">
+          <h2 data-i18n="ride_form_task">작업 정보</h2>
+          <div class="form-row">
+            <div>
+              <label data-i18n="ride_label_title">작업 제목</label>
+              <input type="text" id="task-title" data-i18n-ph="ph_task_title" placeholder="예: 논현동 1톤 트럭 이사" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label data-i18n="ride_label_desc">상세 설명</label>
+              <textarea id="task-desc" data-i18n-ph="ph_task_desc" placeholder="작업 범위, 필요한 도구, 주의사항 등을 자세히 적어주세요"></textarea>
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label data-i18n="ride_label_location">작업 위치</label>
+              <input type="text" id="task-location" data-i18n-ph="ph_task_location" placeholder="예: 서울 강남구 테헤란로 152" />
+            </div>
+            <div>
+              <label data-i18n="ride_label_when">희망 일시</label>
+              <select id="task-when">
+                <option data-i18n="ride_when_today" value="today">오늘 즉시</option>
+                <option data-i18n="ride_when_tomorrow" value="tomorrow">내일</option>
+                <option data-i18n="ride_when_this_week" value="this-week">이번 주 내</option>
+                <option data-i18n="ride_when_negotiable" value="negotiable">워커와 조율</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <h2 data-i18n="ride_form_offer">내 제안 가격 (inDrive식)</h2>
+          <p class="page-sub" data-i18n="ride_form_offer_sub">inDrive는 사용자가 자유롭게 가격을 제안하는 방식입니다. 시스템 추천가보다 낮게 제시하면 더 많은 기사 매칭을 받습니다.</p>
+
+          <div class="offer-slider-wrap">
+            <div class="offer-row">
+              <span class="label-sm" data-i18n="ride_label_my_offer">내 제안가</span>
+              <span class="price" id="my-offer-display">₩50,000</span>
+            </div>
+            <div class="offer-row">
+              <span class="label-sm" data-i18n="ride_label_suggested">시스템 추천가</span>
+              <span class="price suggested" id="suggested-display">₩85,000</span>
+            </div>
+            <div class="slider-row">
+              <input type="range" id="offer-slider" min="10000" max="300000" step="1000" value="50000" oninput="updateOffer(this.value)" />
+              <div class="slider-value" id="slider-value">₩50,000</div>
+            </div>
+          </div>
+
+          <button class="btn-primary" id="btn-submit-request" onclick="submitRequest()" data-i18n="btn_request_quote">호출하기 (워커 매칭)</button>
+        </div>
+
+        <button class="btn-secondary" onclick="goStep(1)" data-i18n="btn_back_categories">← 카테고리로 돌아가기</button>
+      </div>
+
+      <!-- STEP 3: inDrive counter-offer negotiation -->
+      <div class="step" id="step-3">
+        <div class="negotiation-header">
+          <div>
+            <h1 class="page-title" style="margin:0; font-size:20px;" data-i18n="ride_step3_title">워커 카운터오퍼 수신 중</h1>
+            <p class="page-sub" style="margin:4px 0 0;">
+              <span class="pulse-dot"></span>
+              <span data-i18n="ride_step3_sub">반경 3km 내 워커들에게 실시간 매칭 요청을 보냈습니다</span>
+            </p>
+          </div>
+          <span class="badge" id="offer-count-badge" data-i18n="ride_offers_count_0">받은 제안 0건</span>
+        </div>
+
+        <div id="offers-list"></div>
+
+        <div id="empty-state" style="display:none; padding:40px 20px; text-align:center; color:#a1a1aa;">
+          <p style="font-size:48px; margin:0 0 12px;">⏳</p>
+          <p data-i18n="ride_searching">근처 워커들이 내 의뢰를 보고 있어요. 보통 30초 안에 첫 번째 제안이 도착합니다.</p>
+        </div>
+
+        <button class="btn-secondary" onclick="goStep(2)" data-i18n="btn_edit_request">← 의뢰 수정하기</button>
+      </div>
+    </div>
+
+    <script src="./js/screens-07-bundle.js" defer></script>
+    <script>
+      // Inline language switcher handlers (work even if i18n.js fails)
+      function switchLanguage(lang) {
+        if (typeof applyLanguage === 'function') {
+          applyLanguage(lang);
+        }
+        const d = document.getElementById('lang-dropdown');
+        if (d) d.classList.remove('show');
+      }
+      function toggleLangDropdown() {
+        const d = document.getElementById('lang-dropdown');
+        if (d) d.classList.toggle('show');
+      }
+      window.toggleLangDropdown = toggleLangDropdown;
+      window.switchLanguage = switchLanguage;
+      window.addEventListener('click', function(e) {
+        if (!e.target.closest('.lang-switcher-wrap')) {
+          const d = document.getElementById('lang-dropdown');
+          if (d) d.classList.remove('show');
+        }
+      });
+    </script>
+  </body>
+</html>

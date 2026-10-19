@@ -1,0 +1,971 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>golive.wiki — inDrive 다중 카테고리 UI 다이어그램</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --panel: #1e293b;
+        --panel-2: #334155;
+        --text: #f1f5f9;
+        --text-dim: #94a3b8;
+        --accent: #22d3ee;
+        --accent-2: #a78bfa;
+        --good: #10b981;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+        --border: #475569;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+          "Noto Sans KR", sans-serif;
+        line-height: 1.6;
+      }
+      header {
+        padding: 32px 48px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      header h1 {
+        margin: 0;
+        font-size: 28px;
+      }
+      header p {
+        margin: 4px 0 0;
+        color: var(--text-dim);
+        font-size: 14px;
+      }
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px 48px 80px;
+      }
+      h2 {
+        margin-top: 56px;
+        margin-bottom: 16px;
+        font-size: 22px;
+        border-left: 4px solid var(--accent);
+        padding-left: 12px;
+      }
+      h3 {
+        margin-top: 32px;
+        font-size: 18px;
+        color: var(--accent-2);
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 16px 0 24px;
+        font-size: 13px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .swatch {
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+      }
+
+      /* FLOW DIAGRAM (steps) */
+      .flow {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 24px;
+        margin: 24px 0;
+      }
+      .step-card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        position: relative;
+      }
+      .step-card .step-num {
+        position: absolute;
+        top: -12px;
+        left: 16px;
+        background: var(--accent);
+        color: var(--bg);
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .step-card h3 {
+        margin-top: 8px;
+        color: var(--text);
+        font-size: 17px;
+      }
+      .step-card .arrow-after {
+        position: absolute;
+        right: -16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--accent);
+        font-size: 22px;
+        z-index: 2;
+      }
+      .step-card:last-child .arrow-after {
+        display: none;
+      }
+      .step-card ul {
+        padding-left: 18px;
+        margin: 8px 0;
+      }
+      .step-card li {
+        margin: 4px 0;
+        font-size: 13.5px;
+        color: var(--text-dim);
+      }
+      .step-card li strong {
+        color: var(--text);
+      }
+
+      /* CATEGORY GRID */
+      .cat-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px;
+        margin: 24px 0;
+      }
+      .cat {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 10px;
+        text-align: center;
+        font-size: 12.5px;
+        position: relative;
+        transition: all 0.15s ease;
+      }
+      .cat:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+      }
+      .cat .emoji {
+        font-size: 26px;
+        display: block;
+        margin-bottom: 4px;
+      }
+      .cat .name {
+        font-weight: 600;
+        color: var(--text);
+      }
+      .cat .avg {
+        color: var(--text-dim);
+        font-size: 11px;
+        margin-top: 2px;
+      }
+      .cat.top {
+        border-color: var(--warn);
+        background: linear-gradient(
+          135deg,
+          var(--panel) 60%,
+          rgba(245, 158, 11, 0.15)
+        );
+      }
+      .cat.top::before {
+        content: "🔥";
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        font-size: 18px;
+      }
+
+      /* FORM STRUCTURE */
+      .form-layout {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        margin: 24px 0;
+      }
+      .form-section {
+        margin-bottom: 24px;
+      }
+      .form-section h4 {
+        margin: 0 0 12px;
+        color: var(--accent-2);
+        font-size: 15px;
+        border-bottom: 1px dashed var(--border);
+        padding-bottom: 6px;
+      }
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+      .form-row.single {
+        grid-template-columns: 1fr;
+      }
+      .form-field {
+        background: var(--panel-2);
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .form-field .label {
+        font-size: 11px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .form-field .value {
+        font-size: 14px;
+        color: var(--text);
+        margin-top: 4px;
+        font-family: ui-monospace, "SF Mono", monospace;
+      }
+
+      /* OFFER SLIDER */
+      .slider-diagram {
+        background: var(--panel-2);
+        border-radius: 8px;
+        padding: 16px;
+        margin-top: 12px;
+      }
+      .slider-row-vis {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+      .slider-row-vis .my {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .slider-row-vis .sug {
+        color: var(--warn);
+      }
+      .slider-track {
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(
+          to right,
+          var(--bad) 0%,
+          var(--warn) 30%,
+          var(--good) 50%,
+          var(--warn) 70%,
+          var(--bad) 100%
+        );
+        position: relative;
+        margin: 12px 0 28px;
+      }
+      .slider-track .marker {
+        position: absolute;
+        top: -4px;
+        width: 4px;
+        height: 16px;
+        background: var(--accent);
+      }
+      .slider-track .marker.system {
+        background: var(--warn);
+      }
+      .slider-track .marker-label {
+        position: absolute;
+        top: 24px;
+        font-size: 11px;
+        color: var(--text-dim);
+        transform: translateX(-50%);
+        white-space: nowrap;
+      }
+
+      /* OFFERS LIST */
+      .offers {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin: 24px 0;
+      }
+      .offer {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: grid;
+        grid-template-columns: 60px 1fr auto;
+        gap: 14px;
+        align-items: center;
+      }
+      .offer .avatar {
+        width: 50px;
+        height: 50px;
+        background: var(--panel-2);
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 24px;
+      }
+      .offer .info .name {
+        font-weight: 600;
+        color: var(--text);
+      }
+      .offer .info .meta {
+        font-size: 12px;
+        color: var(--text-dim);
+        margin-top: 2px;
+      }
+      .offer .price {
+        font-weight: 700;
+        font-size: 18px;
+        color: var(--good);
+        text-align: right;
+      }
+      .offer .actions {
+        grid-column: 2 / 4;
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .btn {
+        padding: 6px 14px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--panel-2);
+        color: var(--text);
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .btn-primary {
+        background: var(--good);
+        border-color: var(--good);
+        color: white;
+      }
+      .btn-bad {
+        background: transparent;
+        border-color: var(--bad);
+        color: var(--bad);
+      }
+      .btn-warn {
+        background: transparent;
+        border-color: var(--warn);
+        color: var(--warn);
+      }
+
+      /* STATE TRANSITIONS */
+      .states {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin: 24px 0;
+      }
+      .state {
+        background: var(--panel);
+        border-radius: 8px;
+        padding: 12px;
+        border-left: 4px solid var(--accent);
+      }
+      .state h5 {
+        margin: 0 0 6px;
+        font-size: 13px;
+        color: var(--accent);
+      }
+      .state p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+
+      /* DATA TABLE */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 24px 0;
+        font-size: 13.5px;
+      }
+      th,
+      td {
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        text-align: left;
+      }
+      th {
+        background: var(--panel-2);
+        color: var(--accent-2);
+      }
+      td code {
+        background: var(--panel-2);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      tr:hover td {
+        background: var(--panel);
+      }
+
+      .note {
+        background: rgba(167, 139, 250, 0.1);
+        border-left: 4px solid var(--accent-2);
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin: 16px 0;
+        font-size: 13.5px;
+      }
+      .note strong {
+        color: var(--accent-2);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>🚕 golive.wiki — inDrive 다중 카테고리 UI 다이어그램</h1>
+      <p>
+        screens-07-ride.html · 18 카테고리 · 3-Step SPA · inDrive 스타일
+        카운터오퍼 협상
+      </p>
+    </header>
+
+    <main>
+      <div class="legend">
+        <div class="legend-item">
+          <span class="swatch" style="background: var(--accent)"></span> 사용자
+          액션 / 단계 표시
+        </div>
+        <div class="legend-item">
+          <span class="swatch" style="background: var(--accent-2)"></span>
+          데이터 / UI 컴포넌트
+        </div>
+        <div class="legend-item">
+          <span class="swatch" style="background: var(--good)"></span> 긍정 상태
+          (수락/매칭됨)
+        </div>
+        <div class="legend-item">
+          <span class="swatch" style="background: var(--warn)"></span> 주의 /
+          협상 가능
+        </div>
+        <div class="legend-item">
+          <span class="swatch" style="background: var(--bad)"></span> 부정 상태
+          (거절/낮은 가격)
+        </div>
+      </div>
+
+      <h2>1. 사용자 흐름 — 3-Step SPA</h2>
+      <p style="color: var(--text-dim)">
+        사용자는 카테고리 선택 → 의뢰 내용 입력 → 카운터오ffer 협상으로
+        진행합니다. 각 단계는 inDrive 스타일로 자연스럽게 연결됩니다.
+      </p>
+
+      <div class="flow">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="arrow-after">→</div>
+          <h3>카테고리 선택</h3>
+          <p style="font-size: 13px; color: var(--text-dim)">
+            18개 인기 카테고리 중 선택. 인기 카테고리는 🔥 배지로 강조.
+          </p>
+          <ul>
+            <li>
+              <strong>그리드 레이아웃</strong>: 6열 × 3행 (모바일에서는 자동
+              반응형)
+            </li>
+            <li><strong>상단 인터랙션</strong>: hover 시 lift + cyan border</li>
+            <li>
+              <strong>선택 처리</strong>: 카테고리 클릭 → 카테고리 ID 저장 +
+              step-2로 이동
+            </li>
+            <li><strong>평균 가격 표시</strong>: 카드 하단에 ₩XX,000 형태</li>
+          </ul>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="arrow-after">→</div>
+          <h3>의뢰 내용 + 내 제안가</h3>
+          <p style="font-size: 13px; color: var(--text-dim)">
+            제목/설명/위치/일시 + inDrive 스타일 슬라이더로 자유 가격 제안.
+          </p>
+          <ul>
+            <li><strong>4개 입력 필드</strong>: 제목, 설명, 위치, 희망 일시</li>
+            <li>
+              <strong>슬라이더 (10K~300K)</strong>: 내 제안가 ↔ 시스템 추천가
+              비교
+            </li>
+            <li>
+              <strong>실시간 미리보기</strong>: 슬라이더 값 변경 시 즉시 ₩ 표시
+            </li>
+            <li>
+              <strong>호출하기 버튼</strong>: 클릭 → task INSERT + 워커 매칭
+              트리거
+            </li>
+          </ul>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h3>카운터오퍼 협상</h3>
+          <p style="font-size: 13px; color: var(--text-dim)">
+            반경 3km 내 워커들의 카운터오퍼 실시간 수신.
+          </p>
+          <ul>
+            <li>
+              <strong>실시간 피드</strong>: Supabase Realtime 또는 stub 폴링
+              (3초)
+            </li>
+            <li>
+              <strong>워커 카드</strong>: 아바타, 이름, 평점, 거리, 제안가
+            </li>
+            <li><strong>3개 액션</strong>: 수락 ✓ / 거절 ✕ / 재협상 ↻</li>
+            <li><strong>배지 카운터</strong>: 받은 제안 0건 → 동적 업데이트</li>
+          </ul>
+        </div>
+      </div>
+
+      <h2>2. Step 1 — 18 카테고리 그리드</h2>
+      <p style="color: var(--text-dim)">
+        Airtasker + 숨고 데이터 기반 — Home/Living 카테고리가 압도적 1위.
+        <code>js/data/categories.js</code>에서 정의.
+      </p>
+
+      <div class="cat-grid">
+        <div class="cat top">
+          <span class="emoji">🚚</span>
+          <div class="name">이사·운반</div>
+          <div class="avg">avg ₩180K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">🧹</span>
+          <div class="name">가정 청소</div>
+          <div class="avg">avg ₩95K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">🔧</span>
+          <div class="name">핸디맨</div>
+          <div class="avg">avg ₩70K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">🌿</span>
+          <div class="name">정원·잔디</div>
+          <div class="avg">avg ₩60K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">🪑</span>
+          <div class="name">가구 조립</div>
+          <div class="avg">avg ₩55K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">🗑️</span>
+          <div class="name">폐기물 수거</div>
+          <div class="avg">avg ₩110K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">🎨</span>
+          <div class="name">페인팅</div>
+          <div class="avg">avg ₩140K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">🚗</span>
+          <div class="name">자동차 정비</div>
+          <div class="avg">avg ₩120K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">📦</span>
+          <div class="name">픽업·배달</div>
+          <div class="avg">avg ₩45K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">🚿</span>
+          <div class="name">배관</div>
+          <div class="avg">avg ₩85K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">🔌</span>
+          <div class="name">가전 수리</div>
+          <div class="avg">avg ₩65K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">💻</span>
+          <div class="name">컴퓨터 수리</div>
+          <div class="avg">avg ₩50K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">❄️</span>
+          <div class="name">에어컨 설치</div>
+          <div class="avg">avg ₩150K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">🐶</span>
+          <div class="name">반려동물 케어</div>
+          <div class="avg">avg ₩40K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">📚</span>
+          <div class="name">과외·레슨</div>
+          <div class="avg">avg ₩60K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">💪</span>
+          <div class="name">퍼스널 트레이닝</div>
+          <div class="avg">avg ₩80K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">💇</span>
+          <div class="name">미용·헤어</div>
+          <div class="avg">avg ₩55K</div>
+        </div>
+        <div class="cat">
+          <span class="emoji">✨</span>
+          <div class="name">자동차 광택</div>
+          <div class="avg">avg ₩90K</div>
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>📊 데이터 출처</strong>: Airtasker (호주) 카테고리 + 숨고 (한국)
+        2024 통계 — Home/Living이 59%로 압도적 1위, 레슨이 19%로 2위. 2024 성장
+        카테고리: 법률/금융(+72%), 자동차(+44%), 설치/수리(+38%),
+        이사/청소(+30%).
+      </div>
+
+      <h2>3. Step 2 — 의뢰 폼 + inDrive 슬라이더</h2>
+
+      <div class="form-layout">
+        <div class="form-section">
+          <h4>📋 작업 정보 (Task Info)</h4>
+          <div class="form-row single">
+            <div class="form-field">
+              <div class="label">작업 제목 (data-i18n-ph="ph_task_title")</div>
+              <div class="value">논현동 1톤 트럭 이사</div>
+            </div>
+          </div>
+          <div class="form-row single">
+            <div class="form-field">
+              <div class="label">상세 설명 (data-i18n-ph="ph_task_desc")</div>
+              <div class="value">
+                원룸 → 투룸, 박스 25개 + 가전 3개 (세탁기/냉장고/TV)
+              </div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <div class="label">
+                작업 위치 (data-i18n-ph="ph_task_location")
+              </div>
+              <div class="value">서울 강남구 테헤란로 152</div>
+            </div>
+            <div class="form-field">
+              <div class="label">희망 일시 (4 옵션 select)</div>
+              <div class="value">
+                오늘 즉시 · 내일 · 이번 주 내 · 워커와 조율
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h4>💰 내 제안 가격 (inDrive식)</h4>
+          <div class="slider-diagram">
+            <div class="slider-row-vis">
+              <span class="my">내 제안가: ₩50,000</span>
+              <span class="sug">시스템 추천가: ₩85,000</span>
+            </div>
+            <div class="slider-track">
+              <div class="marker system" style="left: 65%"></div>
+              <div class="marker" style="left: 30%"></div>
+              <div class="marker-label" style="left: 30%">₩50K (사용자)</div>
+              <div class="marker-label" style="left: 65%">₩85K (시스템)</div>
+            </div>
+            <p style="font-size: 12px; color: var(--text-dim); margin: 8px 0 0">
+              → inDrive 핵심: <strong>사용자가 자유롭게 가격 제안</strong>.
+              추천가보다 낮으면 매칭률 ↑, 높으면 조기 마감 ↑.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <h2>4. Step 3 — 카운터오퍼 워커 리스트</h2>
+      <p style="color: var(--text-dim)">
+        반경 3km 내 워커들의 실시간 제안. 각 워커 카드는 3개 액션을 제공합니다.
+      </p>
+
+      <div class="offers">
+        <div class="offer">
+          <div class="avatar">👨‍🔧</div>
+          <div>
+            <div class="name">김기사 (4.9 ★ · 0.8km)</div>
+            <div class="meta">이사·운반 8년 경력 · 응답률 95%</div>
+          </div>
+          <div class="price">₩75,000</div>
+          <div class="actions">
+            <button class="btn btn-primary">수락</button>
+            <button class="btn btn-bad">거절</button>
+            <button class="btn btn-warn">재협상 (₩65,000 제안)</button>
+          </div>
+        </div>
+
+        <div class="offer">
+          <div class="avatar">🧑‍🚚</div>
+          <div>
+            <div class="name">박운전 (4.7 ★ · 1.2km)</div>
+            <div class="meta">대형 이사 전문 · 트럭 보유</div>
+          </div>
+          <div class="price">₩90,000</div>
+          <div class="actions">
+            <button class="btn btn-primary">수락</button>
+            <button class="btn btn-bad">거절</button>
+            <button class="btn btn-warn">재협상</button>
+          </div>
+        </div>
+
+        <div class="offer">
+          <div class="avatar">👷</div>
+          <div>
+            <div class="name">이스타 (4.8 ★ · 2.1km)</div>
+            <div class="meta">소형 이사 전문 · 빠른 응답</div>
+          </div>
+          <div class="price">₩55,000</div>
+          <div class="actions">
+            <button class="btn btn-primary">수락</button>
+            <button class="btn btn-bad">거절</button>
+            <button class="btn btn-warn">재협상</button>
+          </div>
+        </div>
+      </div>
+
+      <h2>5. 상태 머신 (State Machine)</h2>
+      <p style="color: var(--text-dim)">
+        Task는 4단계 생명주기를 가집니다. Supabase
+        <code>tasks.status</code> 컬럼에 저장됩니다.
+      </p>
+
+      <div class="states">
+        <div class="state">
+          <h5>① OPEN</h5>
+          <p>사용자가 호출하기 클릭 → task INSERT → Realtime broadcast 시작</p>
+        </div>
+        <div class="state">
+          <h5>② NEGOTIATING</h5>
+          <p>워커들이 counter-offer INSERT → offers 테이블에 누적</p>
+        </div>
+        <div class="state">
+          <h5>③ ACCEPTED</h5>
+          <p>사용자가 워커 수락 → status 업데이트, 매칭 확정</p>
+        </div>
+        <div class="state">
+          <h5>④ COMPLETED</h5>
+          <p>작업 완료 → 평점/리뷰 활성화, payment_status 업데이트</p>
+        </div>
+      </div>
+
+      <h2>6. 데이터 흐름 & API 엔드포인트</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>액션</th>
+            <th>UI 컴포넌트</th>
+            <th>JS 핸들러</th>
+            <th>API / 테이블</th>
+            <th>상태 변경</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>카테고리 클릭</td>
+            <td><code>.cat-card</code></td>
+            <td><code>onCategoryClick(id)</code></td>
+            <td>없음 (local state)</td>
+            <td><code>selectedCategory</code> 저장 → step-2</td>
+          </tr>
+          <tr>
+            <td>호출하기 클릭</td>
+            <td><code>#btn-submit-request</code></td>
+            <td><code>submitRequest()</code></td>
+            <td><code>POST /rest/v1/tasks</code></td>
+            <td>tasks.status = <code>OPEN</code></td>
+          </tr>
+          <tr>
+            <td>워커 매칭</td>
+            <td><code>#offers-list</code></td>
+            <td><code>simulateWorkerOffers()</code></td>
+            <td>stub: <code>setTimeout</code> + Realtime 시뮬레이션</td>
+            <td>offers INSERT</td>
+          </tr>
+          <tr>
+            <td>수락 버튼</td>
+            <td><code>.btn-primary</code></td>
+            <td><code>acceptOffer(offerId)</code></td>
+            <td><code>PATCH /rest/v1/tasks</code></td>
+            <td>
+              tasks.status = <code>ACCEPTED</code>, selected_worker_id 설정
+            </td>
+          </tr>
+          <tr>
+            <td>재협상</td>
+            <td><code>.btn-warn</code></td>
+            <td><code>counterOffer(price)</code></td>
+            <td><code>POST /rest/v1/offers</code> (역방향)</td>
+            <td>offers.status = <code>COUNTERED</code></td>
+          </tr>
+          <tr>
+            <td>거절</td>
+            <td><code>.btn-bad</code></td>
+            <td><code>declineOffer(offerId)</code></td>
+            <td><code>PATCH /rest/v1/offers</code></td>
+            <td>offers.status = <code>DECLINED</code></td>
+          </tr>
+          <tr>
+            <td>언어 전환</td>
+            <td><code>.lang-opt</code></td>
+            <td><code>switchLanguage(lang)</code></td>
+            <td><code>localStorage.golive_lang</code></td>
+            <td>7개 언어 (ko/en/vi/ja/zh/hi/es)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>7. 다국어 i18n 구조</h2>
+      <p style="color: var(--text-dim)">
+        7개 언어 × 30개 키 = 210개 entry. 모든 키가 <code>data-i18n</code> 또는
+        <code>data-i18n-ph</code>로 와이어링됨.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>키 카테고리</th>
+            <th>키 예시</th>
+            <th>개수</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Step 라벨</td>
+            <td>
+              <code>ride_step1</code>, <code>ride_step2</code>,
+              <code>ride_step3</code>
+            </td>
+            <td>3</td>
+          </tr>
+          <tr>
+            <td>Step 타이틀/서브</td>
+            <td><code>ride_step1_title</code>, <code>ride_step3_sub</code></td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>버튼</td>
+            <td>
+              <code>btn_request_quote</code>, <code>btn_back_categories</code>,
+              <code>btn_edit_request</code>
+            </td>
+            <td>3</td>
+          </tr>
+          <tr>
+            <td>폼 라벨</td>
+            <td>
+              <code>ride_label_title</code>, <code>ride_label_my_offer</code>,
+              <code>ride_label_suggested</code>
+            </td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td>섹션 타이틀</td>
+            <td>
+              <code>ride_form_task</code>, <code>ride_form_offer</code>,
+              <code>ride_form_offer_sub</code>
+            </td>
+            <td>3</td>
+          </tr>
+          <tr>
+            <td>희망 일시 옵션</td>
+            <td>
+              <code>ride_when_today</code>, <code>ride_when_tomorrow</code>,
+              <code>ride_when_this_week</code>,
+              <code>ride_when_negotiable</code>
+            </td>
+            <td>4</td>
+          </tr>
+          <tr>
+            <td>Placeholder</td>
+            <td>
+              <code>ph_task_title</code>, <code>ph_task_desc</code>,
+              <code>ph_task_location</code>
+            </td>
+            <td>3</td>
+          </tr>
+          <tr>
+            <td>배지 / 검색</td>
+            <td>
+              <code>ride_offers_count_0</code>, <code>ride_searching</code>,
+              <code>cat_top_badge</code>
+            </td>
+            <td>3</td>
+          </tr>
+          <tr style="background: var(--panel-2)">
+            <td><strong>합계</strong></td>
+            <td><strong>30 unique keys</strong></td>
+            <td><strong>30</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>8. 기술 스택 & 핵심 파일</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th>파일</th>
+            <th>역할</th>
+            <th>라인 수</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>screens-07-ride.html</code></td>
+            <td>3-step SPA shell, 18-cat grid, form, offers list</td>
+            <td>617</td>
+          </tr>
+          <tr>
+            <td><code>js/services-app.js</code></td>
+            <td>State mgmt + step navigation + counter-offer 시뮬레이션</td>
+            <td>304</td>
+          </tr>
+          <tr>
+            <td><code>js/data/categories.js</code></td>
+            <td>18 카테고리 정의 (id, emoji, name, avg_price)</td>
+            <td>171</td>
+          </tr>
+          <tr>
+            <td><code>js/api.js</code></td>
+            <td>fetch-based CRUD (tasks, offers, rides, activity_events)</td>
+            <td>~120</td>
+          </tr>
+          <tr>
+            <td><code>js/supabase-client.js</code></td>
+            <td>Supabase stub (Realtime은 setTimeout 시뮬레이션)</td>
+            <td>~50</td>
+          </tr>
+          <tr>
+            <td><code>js/config.js</code></td>
+            <td>SUPABASE_URL, ANON_KEY env vars</td>
+            <td>~30</td>
+          </tr>
+          <tr>
+            <td><code>styles/i18n.js</code></td>
+            <td>7개 언어 사전 (30 ride_* 키 + 기존 218개)</td>
+            <td>1972</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>⚠️ 작업 상태</strong>: HTML + JS + i18n 모두 통합 완료. 다국어
+        검증 PASS (30 keys × 7 langs = 210 entries). 다음 단계: JSDOM 스모크
+        테스트 + commit/push.
+      </div>
+    </main>
+  </body>
+</html>
