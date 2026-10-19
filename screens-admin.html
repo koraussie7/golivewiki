@@ -6,8 +6,8 @@
     <title>
       golive.wiki — 백엔드 API & 플랫폼 통합 관리자 콘솔 (Admin Console)
     </title>
-    <link rel="stylesheet" href="../styles/tokens.css" />
-    <script src="./styles/i18n.js" defer></script>
+    <link rel="stylesheet" href="./styles/tokens.css" />
+    <script src="./styles/i18n.js" defer type="module"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -309,7 +309,7 @@
     <!-- Header -->
     <header class="admin-header">
       <div style="display: flex; align-items: center; gap: 16px">
-        <a href="../index.html" class="admin-logo">
+        <a href="./index.html" class="admin-logo">
           go<span style="color: var(--at-primary)">live</span>.wiki
           <span class="admin-badge">ADMIN CONSOLE</span>
         </a>
@@ -336,13 +336,13 @@
           </div>
         </div>
         <a
-          href="06-task-detail.html"
+          href="screens-06-task-detail.html"
           style="color: var(--at-muted); text-decoration: none; font-size: 13px"
           data-i18n="nav_task_detail"
           >태스크 상세 화면 &rarr;</a
         >
         <a
-          href="04-dashboard.html"
+          href="screens-04-dashboard.html"
           style="
             color: var(--at-primary);
             text-decoration: none;
@@ -491,7 +491,7 @@
                 <td data-i18n="auth_internal_jwt">내부/JWT</td>
                 <td>
                   <a
-                    href="08-matching.html"
+                    href="#matching"
                     class="btn-test"
                     style="text-decoration: none"
                     data-i18n="btn_console"
@@ -506,7 +506,7 @@
                 <td data-i18n="admin_4_pending">JWT 필수</td>
                 <td>
                   <a
-                    href="09-payment.html"
+                    href="#payment"
                     class="btn-test"
                     style="text-decoration: none"
                     data-i18n="btn_payment"
@@ -600,11 +600,11 @@
           <div class="card-box">
             <div class="box-title" data-i18n="admin_quicknav_title">신규 엔진 관리 바로가기</div>
             <div class="subpage-list">
-              <a href="08-matching.html" class="subpage-link">
+              <a href="#matching" class="subpage-link">
                 <span data-i18n="link_matching">08. AI 매칭 엔진 상세 관제</span>
                 <span>&rarr;</span>
               </a>
-              <a href="09-payment.html" class="subpage-link">
+              <a href="#payment" class="subpage-link">
                 <span data-i18n="link_payment">09. 결제 / 에스크로 릴리즈 관리</span>
                 <span>&rarr;</span>
               </a>
@@ -612,7 +612,7 @@
                 <span data-i18n="link_execution">10. 비동기 실행 큐 & 작업 롤백</span>
                 <span>&rarr;</span>
               </a>
-              <a href="07-my-gigs.html" class="subpage-link">
+              <a href="#mygigs" class="subpage-link">
                 <span data-i18n="link_my_gigs">07. 사용자별 의뢰 현황 조회</span>
                 <span>&rarr;</span>
               </a>

@@ -1,0 +1,16 @@
+services:
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports: ["127.0.0.1:6379:6379"]
+
+  rideflow:
+    image: node:22-alpine
+    working_dir: /app
+    volumes: ["./rideflow-src:/app"]
+    command: sh -c "npm ci && npm run server:dev"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - PORT=5000
+    depends_on: [redis]
+    ports: ["127.0.0.1:5000:5000"]  # localhost 전용 — 외부 노출 금지

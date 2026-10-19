@@ -442,9 +442,10 @@
         </div>
       </div>
 
-      <a href="screens/04-dashboard.html" class="nav-link" data-i18n="nav_find_work">일 찾기</a>
-      <a href="screens/admin.html" class="nav-link" style="color:var(--at-primary); border:1px solid rgba(20,235,192,0.3); border-radius:999px;" data-i18n="nav_admin">관리자 콘솔</a>
-      <a href="screens/05-create-gig.html" class="btn-post-task" data-i18n="nav_post_task">
+      <a href="screens-04-dashboard.html" class="nav-link" data-i18n="nav_find_work">일 찾기</a>
+      <a href="screens-07-ride.html" class="nav-link" data-i18n="nav_ride">🚕 라이드</a>
+      <a href="screens-admin.html" class="nav-link" style="color:var(--at-primary); border:1px solid rgba(20,235,192,0.3); border-radius:999px;" data-i18n="nav_admin">관리자 콘솔</a>
+      <a href="screens-05-create-gig.html" class="btn-post-task" data-i18n="nav_post_task">
         + 일 올리기 (무료)
       </a>
     </div>
@@ -471,10 +472,10 @@
       </p>
 
       <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-        <a href="screens/05-create-gig.html" class="btn-post-task" style="padding:14px 28px; font-size:16px;" data-i18n="hero_cta_post">
+        <a href="screens-05-create-gig.html" class="btn-post-task" style="padding:14px 28px; font-size:16px;" data-i18n="hero_cta_post">
           지금 바로 일 올리기
         </a>
-        <a href="screens/04-dashboard.html" class="nav-link" style="font-size:16px; border:1px solid var(--at-border);" data-i18n="hero_cta_map">
+        <a href="screens-04-dashboard.html" class="nav-link" style="font-size:16px; border:1px solid var(--at-border);" data-i18n="hero_cta_map">
           실시간 태스크 지도 둘러보기 &rarr;
         </a>
       </div>
@@ -500,7 +501,7 @@
           <input type="text" class="styled-input" data-i18n-ph="qp_ph_budget" placeholder="60,000"/>
         </div>
       </div>
-      <a href="screens/05-create-gig.html" class="btn-post-task" style="width:100%; box-sizing:border-box; justify-content:center; padding:12px 0; margin-top:10px;" data-i18n="qp_btn_next">
+      <a href="screens-05-create-gig.html" class="btn-post-task" style="width:100%; box-sizing:border-box; justify-content:center; padding:12px 0; margin-top:10px;" data-i18n="qp_btn_next">
         다음 단계로 계속 (위자드 이동)
       </a>
     </div>
@@ -528,7 +529,7 @@
       <h2 class="section-title" data-i18n="browse_title">주변 실시간 의뢰</h2>
       <p class="section-sub" data-i18n="browse_sub">워커들의 제안(Offer)을 기다리고 있는 최신 작업 목록입니다.</p>
     </div>
-    <a href="screens/04-dashboard.html" class="nav-link" style="color:var(--at-primary);" data-i18n="browse_view_map">지도에서 보기 &rarr;</a>
+    <a href="screens-04-dashboard.html" class="nav-link" style="color:var(--at-primary);" data-i18n="browse_view_map">지도에서 보기 &rarr;</a>
   </div>
 
   <div class="tasks-grid">
@@ -648,7 +649,7 @@
   <p>© 2026 golive.wiki · Multi-Language Global Marketplace (7 Native Languages + Google Translate Engine)</p>
 </footer>
 
-<script src="styles/i18n.js"></script>
+<script src="styles/i18n.js" type="module"></script>
 <script>
   function toggleLangDropdown() {
     const d = document.getElementById('lang-dropdown');

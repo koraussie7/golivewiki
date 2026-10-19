@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>golive.wiki — 태스크 상세 & 오퍼 시스템 (Airtasker Style)</title>
-    <link rel="stylesheet" href="../styles/tokens.css" />
-    <script src="./styles/i18n.js" defer></script>
+    <link rel="stylesheet" href="./styles/tokens.css" />
+    <script src="./styles/i18n.js" defer type="module"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -377,7 +377,7 @@
   <body>
     <header class="global-nav">
       <div class="nav-inner">
-        <a href="../index.html" class="logo">go<span>live</span>.wiki</a>
+        <a href="./index.html" class="logo">go<span>live</span>.wiki</a>
         <div style="display: flex; gap: 14px; align-items: center">
           <!-- Universal Language Switcher Component -->
           <div class="lang-switcher-wrap">
@@ -400,7 +400,7 @@
             </div>
           </div>
           <a
-            href="04-dashboard.html"
+            href="screens-04-dashboard.html"
             style="
               color: var(--at-muted);
               text-decoration: none;
@@ -411,7 +411,7 @@
             >&larr; 대시보드 목록</a
           >
           <a
-            href="admin.html"
+            href="screens-admin.html"
             style="
               color: var(--at-primary);
               text-decoration: none;
@@ -533,7 +533,7 @@
                 가능합니다."
               </div>
               <div class="offer-actions">
-                <a href="09-payment.html" class="btn-accept-offer" data-i18n="btn_accept_offer"
+                <a href="#payment" class="btn-accept-offer" data-i18n="btn_accept_offer"
                   >제안 수락 & 에스크로 결제 &rarr;</a
                 >
               </div>
@@ -558,7 +558,7 @@
                 30분경 도착 가능합니다."
               </div>
               <div class="offer-actions">
-                <a href="09-payment.html" class="btn-accept-offer" data-i18n="btn_accept_offer"
+                <a href="#payment" class="btn-accept-offer" data-i18n="btn_accept_offer"
                   >제안 수락 & 에스크로 결제 &rarr;</a
                 >
               </div>

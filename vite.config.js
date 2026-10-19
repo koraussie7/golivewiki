@@ -36,6 +36,7 @@ export default defineConfig({
         "screens-05-create-gig": resolve(__dirname, "screens-05-create-gig.html"),
         "screens-06-task-detail": resolve(__dirname, "screens-06-task-detail.html"),
         "screens-admin": resolve(__dirname, "screens-admin.html"),
+        "screens-07-ride": resolve(__dirname, "screens-07-ride.html"),
       },
       output: {
         entryFileNames: "assets/[name]-[hash].js",

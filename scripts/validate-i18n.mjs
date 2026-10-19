@@ -18,6 +18,7 @@ const HTML_FILES = [
   "screens-04-dashboard.html",
   "screens-05-create-gig.html",
   "screens-06-task-detail.html",
+  "screens-07-ride.html",
   "screens-admin.html",
 ];
 

@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>golive.wiki — 일 올리기 (Airtasker 4-Step Post Wizard)</title>
-    <link rel="stylesheet" href="../styles/tokens.css" />
-    <script src="./styles/i18n.js" defer></script>
+    <link rel="stylesheet" href="./styles/tokens.css" />
+    <script src="./styles/i18n.js" defer type="module"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -249,7 +249,7 @@
   </head>
   <body>
     <header class="nav">
-      <a href="../index.html" class="logo">go<span>live</span>.wiki</a>
+      <a href="./index.html" class="logo">go<span>live</span>.wiki</a>
       <div class="lang-switcher-wrap">
         <button class="lang-btn" onclick="toggleLangDropdown()">
           <span id="current-lang-label">🇰🇷 KO</span>
@@ -270,7 +270,7 @@
         </div>
       </div>
       <a
-        href="04-dashboard.html"
+        href="screens-04-dashboard.html"
         style="color: var(--at-muted); text-decoration: none; font-size: 14px"
         data-i18n="nav_cancel_exit"
         >취소하고 나가기</a
@@ -393,13 +393,13 @@
 
         <div class="wizard-actions">
           <a
-            href="04-dashboard.html"
+            href="screens-04-dashboard.html"
             class="btn-back"
             data-i18n="btn_back_dashboard"
             >&larr; 대시보드로 돌아가기</a
           >
           <a
-            href="06-task-detail.html"
+            href="screens-06-task-detail.html"
             class="btn-submit"
             data-i18n="btn_free_post"
             >무료로 일 등록하기</a
