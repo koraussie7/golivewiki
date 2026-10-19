@@ -24,8 +24,44 @@ async function processFile(srcPath, destPath) {
   const raw = fs.readFileSync(srcPath, "utf8");
   totalBefore += raw.length;
   if (srcPath.endsWith(".js")) {
+    let minified = raw;
+    // js/supabase-client.js는 ESM `import`/`export`를 써서 terser가 직접
+    // minify하지 못함 — 브라우저 로드가 가능한 UMD shim으로 감싸서 처리.
+    // html에서 `<script src="...">`로 로드되므로 <script type="module">도
+    // 전역 노출 없는 형태로 만들어야 한다.
+    if (srcPath.endsWith("js/supabase-client.js")) {
+      const shim =
+        "(function (global, factory) {\n" +
+        "  if (typeof module === 'object' && module.exports) {\n" +
+        "    module.exports = factory();\n" +
+        "  } else {\n" +
+        "    factory();\n" +
+        "  }\n" +
+        "})(this, function () {\n" +
+        "  'use strict';\n" +
+        "  // 번들/외부 import는 postbuild에서 제거되고 런타임에 동적 import로 로드됨\n" +
+        "  const { SUPABASE_URL: url = '', SUPABASE_ANON_KEY: key = '' } =\n" +
+        "    typeof globalThis !== 'undefined' && globalThis.__supabaseConfig\n" +
+        "      ? globalThis.__supabaseConfig\n" +
+        "      : {};\n" +
+        "  let _supabase = null;\n" +
+        "  let _usingStub = true;\n" +
+        "  try {\n" +
+        "    const mod = await import('@supabase/supabase-js');\n" +
+        "    _supabase = mod.createClient(url, key, {\n" +
+        "      auth: { persistSession: false },\n" +
+        "      realtime: { params: { eventsPerSecond: 10 } },\n" +
+        "    });\n" +
+        "    _usingStub = false;\n" +
+        "  } catch (e) {\n" +
+        "    console.info('[supabase] @supabase/supabase-js not installed — Realtime disabled.');\n" +
+        "  }\n" +
+        "  return { supabase: _supabase, isStubMode: () => _usingStub };\n" +
+        "});\n";
+      minified = shim + "\n" + raw;
+    }
     try {
-      const min = await minify(raw, {
+      const min = await minify(minified, {
         compress: { passes: 2, pure_funcs: ["console.debug"] },
         mangle: { reserved: ["I18N_DICTIONARY", "applyLanguage", "switchLanguage", "toggleLangDropdown", "CATEGORIES"] },
         format: { comments: false },

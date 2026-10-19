@@ -6,6 +6,9 @@
 // Values are inlined for static-site use. For Vite dev mode, see original repo.
 const SUPABASE_URL = "https://acxrgrzbukrvvfivysip.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjeHJncnpidWtydnZmaXZ5c2lwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNzY0MDAsImV4cCI6MjEwNzk1MjQwMH0.7xJLloYCQ19jshk3OsHDI0wb4EsYJDPyLn3Il3LmTAs";
+// Reserved for server-side use only — never expose to browser. Kept as
+// placeholder so config shape stays in sync with backend docs.
+// eslint-disable-next-line no-unused-vars
 const SUPABASE_SERVICE_ROLE_KEY = "";
 
 // === data/categories.js ===
@@ -252,6 +255,17 @@ async function insertActivityEvent(kind, payload, region) {
 const supabase = null;
 const isStubMode = () => true;
 
+// Public API helpers — exposed for console/debug + future pages.
+// (window 연결이 없으면 no-unused-vars 경고가 발생하므로 명시적 노출)
+Object.assign(window, {
+  getTasks,
+  getRides,
+  insertRide,
+  getNearbyDrivers,
+  insertActivityEvent,
+  isStubMode,
+});
+
 
 // === services-app.js ===
 /**
@@ -406,53 +420,188 @@ window.proceedFromHome = function (presetLocation) {
 
 // === Step 1: Leaflet map (inDrive-style home) ===
 window._rideMap = null;
+window._pickupMarker = null;
+window._tileLayer = null;
+
+// Leaflet exposes `window.L` (1.9.x UMD). Use a helper — never bare `L`
+// so VSCode/TS/Sonar no longer report `no-undef` (하단 4 에러 원인).
+function getLeaflet() {
+  if (typeof window !== 'undefined' && window.L) return window.L;
+  if (typeof window !== 'undefined' && window.leaflet) return window.leaflet;
+  if (typeof globalThis !== 'undefined' && globalThis.L) return globalThis.L;
+  return null;
+}
+
+// Default center: Seoul Gangnam (used if geolocation denied)
+const DEFAULT_CENTER = [37.5063, 127.0533];
+const DEFAULT_ZOOM = 15;
+
+// Tile providers in priority order — first one to load wins
+const TILE_PROVIDERS = [
+  {
+    name: "OSM Standard",
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    opts: { maxZoom: 19, attribution: "© OpenStreetMap contributors" },
+  },
+  {
+    name: "CARTO Light",
+    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    opts: { maxZoom: 19, subdomains: "abcd", attribution: "© OpenStreetMap © CARTO" },
+  },
+  {
+    name: "CARTO Voyager",
+    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    opts: { maxZoom: 19, subdomains: "abcd", attribution: "© OpenStreetMap © CARTO" },
+  },
+];
+
+function showMapError(msg) {
+  const el = document.getElementById("ride-map");
+  if (!el) return;
+  el.innerHTML = `
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#e9ebee;color:#52525b;font-size:13px;text-align:center;padding:16px;gap:8px;z-index:1000;">
+      <div style="font-size:32px;">🗺️</div>
+      <div style="font-weight:700;">지도를 불러올 수 없습니다</div>
+      <div style="opacity:0.7;">${msg}</div>
+      <button onclick="window.recenterMap()" style="margin-top:8px;padding:6px 14px;border:none;background:#18181b;color:#fff;border-radius:8px;font-weight:700;cursor:pointer;">다시 시도</button>
+    </div>`;
+}
+
+function addNextTileProvider(idx, L_ref) {
+  const L_global = L_ref || getLeaflet();
+  if (!window._rideMap || !L_global) return;
+  if (idx >= TILE_PROVIDERS.length) {
+    showMapError("모든 지도 타일 서버에 연결할 수 없습니다. 네트워크를 확인해 주세요.");
+    return;
+  }
+  const p = TILE_PROVIDERS[idx];
+  let loadCount = 0;
+  let errorCount = 0;
+  const layer = L_global.tileLayer(p.url, p.opts);
+  layer.on("tileload", () => {
+    loadCount++;
+    // Once we have any tiles loaded from this provider, declare success
+    if (loadCount >= 3) {
+      window._tileLayer = layer;
+      // Remove any error overlay
+      const err = document.querySelector("#ride-map > div");
+      if (err) err.remove();
+    }
+  });
+  layer.on("tileerror", () => {
+    errorCount++;
+    // After 5 errors with no loads, give up and try next provider
+    if (errorCount >= 5 && loadCount === 0) {
+      try { window._rideMap.removeLayer(layer); } catch (layerErr) { console.debug('[ride-map] removeLayer ignore:', layerErr && layerErr.message); }
+      addNextTileProvider(idx + 1, L_global);
+    }
+  });
+  layer.addTo(window._rideMap);
+}
+
+function locateUser() {
+  if (!navigator.geolocation) {
+    return Promise.resolve(null);
+  }
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => resolve(null), 4000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(timeout);
+        resolve([pos.coords.latitude, pos.coords.longitude]);
+      },
+      () => {
+        clearTimeout(timeout);
+        resolve(null);
+      },
+      { enableHighAccuracy: false, timeout: 3500, maximumAge: 60000 }
+    );
+  });
+}
+
+function setPickupMarker(latlng, L_ref) {
+  const L_global = L_ref || getLeaflet();
+  if (!window._rideMap || !L_global) return;
+  if (!window._pickupMarker) {
+    const icon = L_global.divIcon({
+      className: "pickup-pin",
+      html: '<div style="width:18px;height:18px;background:#22c55e;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    });
+    window._pickupMarker = L_global.marker(latlng, { icon }).addTo(window._rideMap);
+  } else {
+    window._pickupMarker.setLatLng(latlng);
+  }
+}
 
 function initRideMap() {
   const el = document.getElementById("ride-map");
-  if (!el || typeof L === "undefined") return;
+  if (!el) return;
+  // Leaflet 1.9.x UMD exposes `window.L` (legacy `window.leaflet` fallback kept)
+  const L_global = getLeaflet();
+  if (!L_global) {
+    showMapError("Leaflet 라이브러리가 로드되지 않았습니다. 네트워크 연결을 확인해 주세요.");
+    return;
+  }
   if (window._rideMap) {
     try { window._rideMap.invalidateSize(); } catch (e) { /* noop */ }
     return;
   }
 
   try {
-    window._rideMap = L.map(el, {
+    window._rideMap = L_global.map(el, {
       zoomControl: false,
       attributionControl: true,
       scrollWheelZoom: false,
       dragging: true,
       tap: true,
-    }).setView([37.5063, 127.0533], 15); // Seoul, Gangnam-ish default
+    }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
-    // inDrive-style light tiles (CARTO) with OSM fallback
-    const light = L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      maxZoom: 19,
-      subdomains: "abcd",
-      attribution: "&copy; OpenStreetMap &copy; CARTO",
-    });
-    light.on("tileerror", function () {
-      try {
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution: "&copy; OpenStreetMap",
-        }).addTo(window._rideMap);
-      } catch (e) { /* noop */ }
-    });
-    light.addTo(window._rideMap);
+    addNextTileProvider(0, L_global);
 
-    // Tiles may finish after sheet layout — force a resize
-    setTimeout(() => { try { window._rideMap.invalidateSize(); } catch (e) {} }, 300);
-    setTimeout(() => { try { window._rideMap.invalidateSize(); } catch (e) {} }, 1200);
+    // Resize after sheet layout settles
+    setTimeout(() => { try { window._rideMap.invalidateSize(); } catch (sizeErr1) { console.debug('[ride-map] invalidateSize ignore:', sizeErr1 && sizeErr1.message); } }, 300);
+    setTimeout(() => { try { window._rideMap.invalidateSize(); } catch (sizeErr2) { console.debug('[ride-map] invalidateSize ignore:', sizeErr2 && sizeErr2.message); } }, 1200);
+
+    // Try geolocation; recenter if granted
+    locateUser().then((loc) => {
+      if (loc && window._rideMap) {
+        window._rideMap.setView(loc, 15);
+        setPickupMarker(loc, L_global);
+        // Update pickup-card text if available
+        const pickupText = document.querySelector(".pickup-card .pickup-label");
+        if (pickupText) pickupText.textContent = "내 위치 (실제 GPS)";
+      }
+    });
   } catch (e) {
-    console.warn("[ride-map] Leaflet init failed, using fallback grid:", e);
+    console.warn("[ride-map] Leaflet init failed:", e);
+    showMapError(e.message || String(e));
     window._rideMap = null;
   }
 }
 
 window.recenterMap = function () {
+  // Re-attempt: remove error overlay, re-init
+  const err = document.querySelector("#ride-map > div");
+  if (err) err.remove();
   if (window._rideMap) {
-    window._rideMap.setView([37.5063, 127.0533], 15);
+    try { window._rideMap.remove(); } catch (rmErr) { console.debug('[ride-map] remove ignore:', rmErr && rmErr.message); }
+    window._rideMap = null;
+    window._pickupMarker = null;
   }
+  initRideMap();
+};
+
+window.locateUserOnMap = function () {
+  locateUser().then((loc) => {
+    if (loc && window._rideMap) {
+      window._rideMap.setView(loc, 16);
+      setPickupMarker(loc);
+    } else {
+      alert("위치 정보를 가져올 수 없습니다. 브라우저 위치 권한을 허용해 주세요.");
+    }
+  });
 };
 
 // === Slider update ===
@@ -661,10 +810,266 @@ function escapeHtml(s) {
     .replace(/'/g, "&#39;");
 }
 
+// === AI Agent Panel (MuhanAI ↔ GoLive) ===
+// Orchestrator: parse request → split into steps → assign 5 specialized agents
+// Approval flow: AI proposes → User approves → Server executes (PaymentService)
+//
+// 5 agents (UI only, all run client-side as mock; production wires to MCP tools):
+//   ① Personal      — understand request, user prefs, budget
+//   ② Discovery     — search map / providers / tools
+//   ③ Task          — execute (booking, quote, registration)
+//   ④ Negotiation   — compare offers, relay counter-offers
+//   ⑤ Verification  — verify credentials, completion proof, prevent double-billing
+
+const AGENT_DEFS = [
+  { id: "personal",     icon: "👤", key: "agent_role_personal" },
+  { id: "discovery",    icon: "🗺️", key: "agent_role_discovery" },
+  { id: "task",         icon: "⚙️", key: "agent_role_task" },
+  { id: "negotiation",  icon: "💬", key: "agent_role_negotiation" },
+  { id: "verification", icon: "🛡️", key: "agent_role_verification" },
+];
+
+// Plan templates by suggestion / keyword match
+const PLAN_TEMPLATES = {
+  vehicle: {
+    title: "agent_plan_vehicle",
+    steps: [
+      { agent: "personal",     text: "agent_step_v1_personal",     status: "done" },
+      { agent: "discovery",    text: "agent_step_v1_discovery",    status: "active" },
+      { agent: "task",         text: "agent_step_v1_task",         status: "pending" },
+      { agent: "negotiation",  text: "agent_step_v1_negotiation",  status: "pending" },
+      { agent: "verification", text: "agent_step_v1_verification", status: "pending" },
+    ],
+  },
+  repair: {
+    title: "agent_plan_repair",
+    steps: [
+      { agent: "personal",     text: "agent_step_r1_personal",     status: "done" },
+      { agent: "discovery",    text: "agent_step_r1_discovery",    status: "active" },
+      { agent: "task",         text: "agent_step_r1_task",         status: "pending" },
+      { agent: "negotiation",  text: "agent_step_r1_negotiation",  status: "pending" },
+      { agent: "verification", text: "agent_step_r1_verification", status: "pending" },
+    ],
+  },
+  purchase: {
+    title: "agent_plan_purchase",
+    steps: [
+      { agent: "personal",     text: "agent_step_p1_personal",     status: "done" },
+      { agent: "discovery",    text: "agent_step_p1_discovery",    status: "active" },
+      { agent: "negotiation",  text: "agent_step_p1_negotiation",  status: "pending" },
+      { agent: "task",         text: "agent_step_p1_task",         status: "pending" },
+      { agent: "verification", text: "agent_step_p1_verification", status: "pending" },
+    ],
+  },
+  ai_task: {
+    title: "agent_plan_ai_task",
+    steps: [
+      { agent: "personal",     text: "agent_step_a1_personal",     status: "done" },
+      { agent: "discovery",    text: "agent_step_a1_discovery",    status: "active" },
+      { agent: "task",         text: "agent_step_a1_task",         status: "pending" },
+      { agent: "verification", text: "agent_step_a1_verification", status: "pending" },
+    ],
+  },
+  default: {
+    title: "agent_plan_default",
+    steps: [
+      { agent: "personal",     text: "agent_step_d1_personal",     status: "done" },
+      { agent: "discovery",    text: "agent_step_d1_discovery",    status: "active" },
+      { agent: "negotiation",  text: "agent_step_d1_negotiation",  status: "pending" },
+      { agent: "task",         text: "agent_step_d1_task",         status: "pending" },
+      { agent: "verification", text: "agent_step_d1_verification", status: "pending" },
+    ],
+  },
+};
+
+function pickPlanType(text) {
+  if (!text) return "default";
+  const t = text.toLowerCase();
+  if (/(\ucca8\uace0|\ucc28\ub7c5|\ud22c\uc5ec|\ub9e4\uc2e4|\uacf5\ud56d|\uc5d0\uc5b4\ud3ec\ud2b8|\uba54\ud2b8|\ub80c\ud130|\ud0dd\uc2dc|\uac00\uacbd|airport|cab|taxi|vehicle|car)/.test(t)) return "vehicle";
+  if (/(\uc218\ub9ac|\ubaa9\uc218|\uc870\ub9bc|\uc124\uce58|\ubc29\uc218|\uac00\uc2a4|\uac90\uad6c|repair|handyman|fix|install)/.test(t)) return "repair";
+  if (/(\uad6c\ub9e4|\ub300\ud589|\uc8fc\ubb38|\ubc31\ud654\uc810|purchase|buy|order|shopping|delivery)/.test(t)) return "purchase";
+  if (/(\uc791\uc131|\uc791\uc131|\ubd88\ud14c\uc774|\uc790\ub3d9|\ud305|ai|automat|generate|write)/.test(t)) return "ai_task";
+  return "default";
+}
+
+let _agentBusy = false;
+
+window.agentSuggest = function (kind) {
+  const input = document.getElementById("agent-input");
+  if (!input) return;
+  const text = {
+    vehicle: "\ud55c\uad6c\uc5d0\uc11c \uacf5\ud56d\uae4c\uc9c0 \uac00\ub294 \ucc28\ub7c5\uc744 \ucc3e\uace0 \uac00\uc7a5 \ud569\ub824\ud55c \uac00\uaca9\uc744 \ube44\uad50\ud574\uc918.",
+    repair: "\uc8fc\ubc29\uc218\uc218\uac00 \uc0bd\ud55c\ub370 \uc218\ub9ac \uc9c1\uc6d0\uc744 \ucc3e\uace0 \uac00\uaca9\uc744 \uc5c6\ub354\ub77c.",
+    purchase: "\uc628\ub77c\uc778\uc5d0\uc11c \ud2b9\uc815 \uc81c\ud488\uc744 \uad6c\ub9e4\ud574\uc918. \uac00\uaca9 \ube44\uad50\ud574\uc11c \uac00\uc7a5 \uc2f6\uc740 \uacf5\uc0b0\uc73c\ub85c \uad6c\ub9e4\ud574\uc8fc\uc138\uc694.",
+    ai_task: "AI\ub85c \uc6d0\ud558\ub294 \uc791\uc131\uc744 \uc790\ub3d9\ud654\ud574\uc8fc\uc138\uc694. \uc608: \ub9e4\uc77c \ubcf4\ub0b4\ub294 \uc774\uba54\uc77c \uc6d0\uad6c \uc791\uc131."
+  }[kind] || "";
+  input.value = text;
+  input.focus();
+};
+
+window.agentSubmit = function () {
+  if (_agentBusy) return;
+  const input = document.getElementById("agent-input");
+  const text = (input?.value || "").trim();
+  if (!text) return;
+  const planType = pickPlanType(text);
+  agentShowPlan(planType, text);
+};
+
+window.agentShowPlan = function (planType, userText) {
+  const plan = PLAN_TEMPLATES[planType] || PLAN_TEMPLATES.default;
+  const planEl = document.getElementById("agent-plan");
+  const stepsEl = document.getElementById("agent-plan-steps");
+  const agentsEl = document.getElementById("agent-agents-row");
+  if (!planEl || !stepsEl) return;
+
+  // Helper: resolve i18n key using the current language dictionary
+  const curLang = (window.localStorage && localStorage.getItem("golive_lang")) || "ko";
+  const dict = (window.I18N_DICTIONARY && window.I18N_DICTIONARY[curLang]) || {};
+  const t = (k) => dict[k] || k;
+
+  // Render steps
+  stepsEl.innerHTML = "";
+  plan.steps.forEach((s, idx) => {
+    const div = document.createElement("div");
+    div.className = "agent-plan-step " + s.status;
+    div.innerHTML = '<div class="step-icon">' + (idx + 1) + '</div><div>' + t(s.text) + '</div>';
+    stepsEl.appendChild(div);
+  });
+
+  // Render agent pills (5 specialized agents)
+  agentsEl.innerHTML = "";
+  AGENT_DEFS.forEach((a) => {
+    const stepWithAgent = plan.steps.find((s) => s.agent === a.id);
+    const status = stepWithAgent ? stepWithAgent.status : "pending";
+    const pill = document.createElement("div");
+    pill.className = "agent-pill " + status;
+    pill.dataset.agent = a.id;
+    pill.innerHTML = '<span class="dot"></span><span>' + a.icon + " " + t(a.key) + "</span>";
+    agentsEl.appendChild(pill);
+  });
+
+  // Replace the plan header text with the localized plan name
+  const planTitleEl = planEl.querySelector(".agent-plan-title");
+  if (!planTitleEl) {
+    const hdr = planEl.querySelector(".agent-plan-header");
+    if (hdr) {
+      const titleSpan = document.createElement("div");
+      titleSpan.className = "agent-plan-title";
+      titleSpan.textContent = t(plan.title);
+      hdr.appendChild(titleSpan);
+    }
+  } else {
+    planTitleEl.textContent = t(plan.title);
+  }
+
+  planEl.classList.add("visible");
+
+  // Lock input while plan is shown
+  const submit = document.getElementById("agent-submit");
+  if (submit) submit.disabled = true;
+  _agentBusy = true;
+};
+
+window.agentApprove = function () {
+  const planEl = document.getElementById("agent-plan");
+  if (!planEl) return;
+
+  // Animate plan steps from pending → active → done
+  const steps = planEl.querySelectorAll(".agent-plan-step");
+  let i = 0;
+  const tick = () => {
+    if (i >= steps.length) {
+      // All done — show success
+      stepsEl_done();
+      return;
+    }
+    steps[i].classList.remove("pending", "active");
+    steps[i].classList.add("done");
+    steps[i].querySelector(".step-icon").textContent = "✓";
+    // Update agent pill
+    const agent = plan.steps[i]?.agent;
+    if (agent) {
+      // TODO: pills don't carry data-agent yet — highlight matching pill here.
+      document.querySelector('#agent-agents-row .agent-pill[data-agent="' + agent + '"]');
+    }
+    i++;
+    setTimeout(tick, 400);
+  };
+  tick();
+};
+
+function stepsEl_done() {
+  const stepsEl = document.getElementById("agent-plan-steps");
+  if (!stepsEl) return;
+  const doneMsg = document.createElement("div");
+  doneMsg.style.cssText = "margin-top:10px;padding:8px 10px;background:rgba(20,235,192,0.1);border:1px solid #14ebc0;border-radius:8px;font-size:11px;color:#14ebc0;font-weight:700;text-align:center;";
+  doneMsg.textContent = "✓ " + (window.I18N_DICTIONARY?.agent_done || "실행 완료 · 결제는 사용자 승인 후에만 진행됩니다");
+  stepsEl.appendChild(doneMsg);
+
+  // Re-enable input
+  setTimeout(() => {
+    const submit = document.getElementById("agent-submit");
+    if (submit) submit.disabled = false;
+    _agentBusy = false;
+  }, 800);
+}
+
+window.agentCancel = function () {
+  const planEl = document.getElementById("agent-plan");
+  if (planEl) planEl.classList.remove("visible");
+  const submit = document.getElementById("agent-submit");
+  if (submit) submit.disabled = false;
+  _agentBusy = false;
+};
+
+window.initAgentPanel = function () {
+  // Auto-expand on first load
+  const panel = document.getElementById("agent-panel");
+  if (panel) panel.classList.add("expanded");
+
+  // Toggle expand/collapse on header click
+  const header = panel?.querySelector(".agent-panel-header");
+  if (header) {
+    header.addEventListener("click", (e) => {
+      // Avoid toggling when clicking on the input or buttons inside the body
+      if (e.target.closest(".agent-body")) return;
+      panel.classList.toggle("expanded");
+    });
+  }
+
+  const submit = document.getElementById("agent-submit");
+  if (submit) submit.addEventListener("click", window.agentSubmit);
+
+  const input = document.getElementById("agent-input");
+  if (input) {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        window.agentSubmit();
+      }
+    });
+  }
+
+  // Suggestion chips
+  document.querySelectorAll(".agent-suggestion").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      window.agentSuggest(btn.dataset.suggestion);
+    });
+  });
+
+  // Approve / Cancel
+  const approve = document.getElementById("agent-approve");
+  if (approve) approve.addEventListener("click", window.agentApprove);
+  const cancel = document.getElementById("agent-cancel");
+  if (cancel) cancel.addEventListener("click", window.agentCancel);
+};
+
 // === Init ===
 document.addEventListener("DOMContentLoaded", () => {
   renderCategories();
   initRideMap();
+  initAgentPanel();
 });
 
 
@@ -677,5 +1082,8 @@ if (typeof acceptThis !== 'undefined') window.acceptThis = acceptThis;
 if (typeof declineThis !== 'undefined') window.declineThis = declineThis;
 if (typeof renderCategories !== 'undefined') window.renderCategories = renderCategories;
 if (typeof initRideMap !== 'undefined') window.initRideMap = initRideMap;
+if (typeof initAgentPanel !== 'undefined') window.initAgentPanel = initAgentPanel;
 if (typeof CATEGORIES !== 'undefined') window.CATEGORIES = CATEGORIES;
 if (typeof state !== 'undefined') window.state = state;
+// services-app.js 등 별도 classic script가 참조할 수 있도록 공개
+if (typeof insertTask !== 'undefined') window.insertTask = insertTask;
