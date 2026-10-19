@@ -19,3 +19,24 @@ npm-debug.log*
 # 임시
 *.tmp
 z-*.txt
+
+# Terraform — 상태/변수 파일은 토큰·인프라 정보를 담으므로 절대 커밋 금지
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+terraform.tfvars
+*.auto.tfvars
+**/.terraform/
+.terraform.lock.hcl
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+tfplan.bin
+
+# Vite build output
+dist/
+.vite/
