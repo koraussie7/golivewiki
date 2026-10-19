@@ -30,6 +30,12 @@ async function processFile(srcPath, destPath) {
     // html에서 `<script src="...">`로 로드되므로 <script type="module">도
     // 전역 노출 없는 형태로 만들어야 한다.
     if (srcPath.endsWith("js/supabase-client.js")) {
+      // 원본 최상단의 ESM import 제거 (shim이 url/key를 직접 제공)
+      // ^가 라인 시작을 잡도록 m 플래그 사용 (s 플래그 아님)
+      const cleaned =
+        raw.replace(/^\s*import\s+[^\n]*config\.js["'];\s*/gm, "") +
+        "\n" +
+        "// supabase-client는 postbuild에서 UMD shim으로 감싸져 번들됨\n";
       const shim =
         "(function (global, factory) {\n" +
         "  if (typeof module === 'object' && module.exports) {\n" +
@@ -58,7 +64,7 @@ async function processFile(srcPath, destPath) {
         "  }\n" +
         "  return { supabase: _supabase, isStubMode: () => _usingStub };\n" +
         "});\n";
-      minified = shim + "\n" + raw;
+      minified = shim + cleaned;
     }
     try {
       const min = await minify(minified, {

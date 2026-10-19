@@ -2072,14 +2072,23 @@ window.switchLanguage = function(lang) {
   if (d) d.classList.remove('show');
 };
 
+// Expose applyLanguage on window for inline script wrappers
+window.applyLanguage = applyLanguage;
+
 /**
  * Apply Direct Dictionary or Trigger Google Translate
  */
 function applyLanguage(lang) {
   localStorage.setItem("golive_lang", lang);
 
+  // Look up dictionary: try local lexical scope first, then window/global
+  const dict_root = (typeof I18N_DICTIONARY !== "undefined") ? I18N_DICTIONARY
+                   : (typeof window !== "undefined" && window.I18N_DICTIONARY) ? window.I18N_DICTIONARY
+                   : null;
+  if (!dict_root) return; // No dictionary available
+
   // If in direct 7 languages
-  if (I18N_DICTIONARY[lang]) {
+  if (dict_root[lang]) {
     // Clear Google Translate cookie if any
     document.cookie =
       "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -2088,10 +2097,10 @@ function applyLanguage(lang) {
       location.hostname +
       "; path=/;";
 
-    const dict = I18N_DICTIONARY[lang];
+    const dict = dict_root[lang];
     document.querySelectorAll("[data-i18n]").forEach((el) => {
       const key = el.getAttribute("data-i18n");
-      const val = dict[key] || (I18N_DICTIONARY[key] && I18N_DICTIONARY[key][lang]);
+      const val = dict[key] || (dict_root[key] && dict_root[key][lang]);
       if (val) {
         el.innerText = val;
       }
@@ -2099,7 +2108,7 @@ function applyLanguage(lang) {
 
     document.querySelectorAll("[data-i18n-ph]").forEach((el) => {
       const key = el.getAttribute("data-i18n-ph");
-      const val = dict[key] || (I18N_DICTIONARY[key] && I18N_DICTIONARY[key][lang]);
+      const val = dict[key] || (dict_root[key] && dict_root[key][lang]);
       if (val) {
         el.setAttribute("placeholder", val);
       }

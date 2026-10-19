@@ -636,7 +636,11 @@
     if (d) d.classList.toggle("show");
   }
   function switchLanguage(lang) {
-    applyLanguage(lang);
+    if (typeof window.applyLanguage === 'function') {
+      window.applyLanguage(lang);
+    } else if (typeof applyLanguage === 'function') {
+      applyLanguage(lang);
+    }
     const d = document.getElementById("lang-dropdown");
     if (d) d.classList.remove("show");
   }

@@ -656,8 +656,17 @@
   }
 
   function switchLanguage(lang) {
-    applyLanguage(lang);
-    document.getElementById('lang-dropdown').classList.remove('show');
+    if (typeof window.applyLanguage === 'function') {
+      window.applyLanguage(lang);
+    } else if (typeof applyLanguage === 'function') {
+      applyLanguage(lang);
+    }
+    const d = document.getElementById('lang-dropdown');
+    if (d) d.classList.remove('show');
+  }
+  function toggleLangDropdown() {
+    const d = document.getElementById('lang-dropdown');
+    if (d) d.classList.toggle('show');
   }
   window.toggleLangDropdown = toggleLangDropdown;
   window.switchLanguage = switchLanguage;
