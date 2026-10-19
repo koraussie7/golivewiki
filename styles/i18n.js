@@ -10,6 +10,7 @@ const I18N_DICTIONARY = {
   ko: {
     logo_sub: "에어태스커 에디션",
     nav_find_work: "일 찾기",
+    nav_ride: "🚕 라이드",
     nav_login: "로그인",
     nav_post_task: "+ 일 올리기 (무료)",
     nav_my_tasks: "내 의뢰 목록",
@@ -288,6 +289,7 @@ const I18N_DICTIONARY = {
 
   en: {
     logo_sub: "AIRTASKER EDITION",
+    nav_ride: "🚕 Ride",
     nav_find_work: "Browse Tasks",
     nav_login: "Log In",
     nav_post_task: "+ Post a Task (Free)",
@@ -562,6 +564,7 @@ const I18N_DICTIONARY = {
 
   vi: {
     logo_sub: "PHIÊN BẢN AIRTASKER",
+    nav_ride: "🚕 Đi xe",
     nav_find_work: "Tìm việc",
     nav_login: "Đăng nhập",
     nav_post_task: "+ Đăng việc (Miễn phí)",
@@ -835,6 +838,7 @@ const I18N_DICTIONARY = {
 
   ja: {
     logo_sub: "エアタスク版",
+    nav_ride: "🚕 ライド",
     nav_find_work: "仕事を探す",
     nav_login: "ログイン",
     nav_post_task: "+ 仕事を依頼する (無料)",
@@ -1105,6 +1109,7 @@ const I18N_DICTIONARY = {
 
   zh: {
     logo_sub: "AIRTASKER 专业版",
+    nav_ride: "🚕 出行",
     nav_find_work: "寻找任务",
     nav_login: "登录",
     nav_post_task: "+ 发布任务 (免费)",
@@ -1374,6 +1379,7 @@ const I18N_DICTIONARY = {
 
   hi: {
     logo_sub: "एयरटास्कर संस्करण",
+    nav_ride: "🚕 राइड",
     nav_find_work: "काम खोजें",
     nav_login: "लॉग इन",
     nav_post_task: "+ काम पोस्ट करें (मुफ़्त)",
@@ -1646,6 +1652,7 @@ const I18N_DICTIONARY = {
 
   es: {
     logo_sub: "EDICIÓN AIRTASKER",
+    nav_ride: "🚕 Viaje",
     nav_find_work: "Buscar Tareas",
     nav_login: "Iniciar Sesión",
     nav_post_task: "+ Publicar Tarea (Gratis)",

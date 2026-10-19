@@ -6,8 +6,8 @@
     <title>
       golive.wiki — 백엔드 API & 플랫폼 통합 관리자 콘솔 (Admin Console)
     </title>
-    <link rel="stylesheet" href="../styles/tokens.css" />
-    <script src="../styles/i18n.js" defer></script>
+    <link rel="stylesheet" href="styles/tokens.css" />
+    <script src="styles/i18n.js" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -309,7 +309,7 @@
     <!-- Header -->
     <header class="admin-header">
       <div style="display: flex; align-items: center; gap: 16px">
-        <a href="../index.html" class="admin-logo">
+        <a href="index.html" class="admin-logo">
           go<span style="color: var(--at-primary)">live</span>.wiki
           <span class="admin-badge">ADMIN CONSOLE</span>
         </a>
@@ -631,26 +631,28 @@
     </script>
   <!-- Language Switcher Inline Init (matches index.html) -->
 <script>
-  function toggleLangDropdown() {
-    const d = document.getElementById("lang-dropdown");
-    if (d) d.classList.toggle("show");
-  }
-  function switchLanguage(lang) {
-    if (typeof window.applyLanguage === 'function') {
-      window.applyLanguage(lang);
-    } else if (typeof applyLanguage === 'function') {
-      applyLanguage(lang);
+  document.addEventListener('DOMContentLoaded', function() {
+    function toggleLangDropdown() {
+      const d = document.getElementById("lang-dropdown");
+      if (d) d.classList.toggle("show");
     }
-    const d = document.getElementById("lang-dropdown");
-    if (d) d.classList.remove("show");
-  }
-  window.toggleLangDropdown = toggleLangDropdown;
-  window.switchLanguage = switchLanguage;
-  window.addEventListener("click", function(e) {
-    if (!e.target.closest(".lang-switcher-wrap")) {
+    function switchLanguage(lang) {
+      if (typeof window.applyLanguage === 'function') {
+        window.applyLanguage(lang);
+      } else if (typeof applyLanguage === 'function') {
+        applyLanguage(lang);
+      }
       const d = document.getElementById("lang-dropdown");
       if (d) d.classList.remove("show");
     }
+    window.toggleLangDropdown = toggleLangDropdown;
+    window.switchLanguage = switchLanguage;
+    window.addEventListener("click", function(e) {
+      if (!e.target.closest(".lang-switcher-wrap")) {
+        const d = document.getElementById("lang-dropdown");
+        if (d) d.classList.remove("show");
+      }
+    });
   });
 </script>
 

@@ -1472,27 +1472,29 @@
     <script src="./js/vendor/leaflet.js"></script>
     <script src="./js/screens-07-bundle.js" defer></script>
     <script>
-      // Inline language switcher handlers (work even if i18n.js fails)
-      function switchLanguage(lang) {
-        if (typeof window.applyLanguage === 'function') {
-          window.applyLanguage(lang);
-        } else if (typeof applyLanguage === 'function') {
-          applyLanguage(lang);
-        }
-        const d = document.getElementById('lang-dropdown');
-        if (d) d.classList.remove('show');
-      }
-      function toggleLangDropdown() {
-        const d = document.getElementById('lang-dropdown');
-        if (d) d.classList.toggle('show');
-      }
-      window.toggleLangDropdown = toggleLangDropdown;
-      window.switchLanguage = switchLanguage;
-      window.addEventListener('click', function(e) {
-        if (!e.target.closest('.lang-switcher-wrap')) {
+      // Inline handlers wrapped in DOMContentLoaded so i18n.js (defer) loads first.
+      document.addEventListener('DOMContentLoaded', function() {
+        function switchLanguage(lang) {
+          if (typeof window.applyLanguage === 'function') {
+            window.applyLanguage(lang);
+          } else if (typeof applyLanguage === 'function') {
+            applyLanguage(lang);
+          }
           const d = document.getElementById('lang-dropdown');
           if (d) d.classList.remove('show');
         }
+        function toggleLangDropdown() {
+          const d = document.getElementById('lang-dropdown');
+          if (d) d.classList.toggle('show');
+        }
+        window.toggleLangDropdown = toggleLangDropdown;
+        window.switchLanguage = switchLanguage;
+        window.addEventListener('click', function(e) {
+          if (!e.target.closest('.lang-switcher-wrap')) {
+            const d = document.getElementById('lang-dropdown');
+            if (d) d.classList.remove('show');
+          }
+        });
       });
     </script>
   </body>
