@@ -677,6 +677,8 @@
     const d = document.getElementById("lang-dropdown");
     if (d) d.classList.remove("show");
   }
+  window.toggleLangDropdown = toggleLangDropdown;
+  window.switchLanguage = switchLanguage;
   window.addEventListener("click", function(e) {
     if (!e.target.closest(".lang-switcher-wrap")) {
       const d = document.getElementById("lang-dropdown");

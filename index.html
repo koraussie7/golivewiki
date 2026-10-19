@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>golive.wiki — 동네와 일상을 잇는 로컬 긱 마켓플레이스 (Airtasker Style)</title>
+<link rel="stylesheet" href="styles/tokens.css"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --at-primary: #14EBC0;
+    --at-primary-hover: #0fd2ab;
+    --at-blue: #0A65FC;
+    --at-dark: #09090B;
+    --at-card-bg: #141418;
+    --at-border: #27272A;
+    --at-border-hover: #3F3F46;
+    --at-text-main: #FAFAFA;
+    --at-text-muted: #A1A1AA;
+    --at-pill-bg: #1F1F24;
+    --at-gold: #F59E0B;
+  }
+
+  body {
+    background: var(--at-dark);
+    color: var(--at-text-main);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+  }
+
+  /* Global Top Navigation */
+  header.global-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(9, 9, 11, 0.88);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--at-border);
+    padding: 12px 24px;
+  }
+  .nav-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    font-weight: 800;
+    font-size: 21px;
+    letter-spacing: -0.03em;
+    color: #fff;
+  }
+  .logo span { color: var(--at-primary); }
+  .logo-badge {
+    background: rgba(20, 235, 192, 0.15);
+    color: var(--at-primary);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .nav-search {
+    flex: 1;
+    max-width: 440px;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .nav-search input {
+    width: 100%;
+    background: #141418;
+    border: 1px solid var(--at-border);
+    border-radius: 999px;
+    padding: 10px 18px 10px 42px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    transition: all .2s;
+  }
+  .nav-search input:focus {
+    border-color: var(--at-primary);
+    box-shadow: 0 0 0 3px rgba(20, 235, 192, 0.15);
+  }
+  .nav-search svg {
+    position: absolute;
+    left: 16px;
+    color: var(--at-text-muted);
+    width: 16px;
+    height: 16px;
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-link {
+    color: var(--at-text-muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: color .2s;
+  }
+  .nav-link:hover { color: #fff; }
+  .btn-post-task {
+    background: var(--at-primary);
+    color: #09090B !important;
+    font-weight: 700 !important;
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 13.5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: transform .15s, filter .15s;
+    box-shadow: 0 2px 10px rgba(20, 235, 192, 0.25);
+    white-space: nowrap;
+  }
+  .btn-post-task:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+  }
+
+  /* Hero Section with Post a Task Focus */
+  .hero-wrapper {
+    position: relative;
+    border-bottom: 1px solid var(--at-border);
+    padding: 60px 24px 52px;
+    overflow: hidden;
+    background: radial-gradient(circle at 80% 20%, rgba(10, 101, 252, 0.12), transparent 45%),
+                radial-gradient(circle at 20% 80%, rgba(20, 235, 192, 0.08), transparent 40%);
+  }
+  .hero-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 56px;
+    align-items: center;
+  }
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(20, 235, 192, 0.12);
+    border: 1px solid rgba(20, 235, 192, 0.25);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    color: var(--at-primary);
+    font-weight: 600;
+    margin-bottom: 20px;
+  }
+  .hero-tag .live-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--at-primary);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--at-primary);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% { transform: scale(0.95); opacity: 0.8; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(0.95); opacity: 0.8; }
+  }
+  .hero-title {
+    font-size: 52px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    margin-bottom: 20px;
+  }
+  .hero-title .highlight {
+    background: linear-gradient(135deg, #14EBC0 0%, #0A65FC 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero-desc {
+    color: var(--at-text-muted);
+    font-size: 17px;
+    line-height: 1.6;
+    margin-bottom: 32px;
+    max-width: 540px;
+  }
+
+  /* Quick Post Task Box in Hero */
+  .quick-post-card {
+    background: #141418;
+    border: 1px solid var(--at-border);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  }
+  .quick-post-card h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .step-pill {
+    background: rgba(255,255,255,0.08);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    color: var(--at-text-muted);
+    font-weight: 600;
+  }
+  .input-group {
+    margin-bottom: 14px;
+  }
+  .input-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--at-text-muted);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .styled-input {
+    width: 100%;
+    background: #0E0E11;
+    border: 1px solid var(--at-border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .styled-input:focus { border-color: var(--at-primary); }
+
+  /* Category Navigation Pills */
+  .category-section {
+    max-width: 1280px;
+    margin: 36px auto 16px;
+    padding: 0 24px;
+  }
+  .category-pills {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+  }
+  .category-pills::-webkit-scrollbar { display: none; }
+  .cat-pill {
+    white-space: nowrap;
+    background: var(--at-card-bg);
+    border: 1px solid var(--at-border);
+    border-radius: 999px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--at-text-main);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all .2s;
+  }
+  .cat-pill:hover, .cat-pill.active {
+    background: var(--at-primary);
+    color: #09090B;
+    border-color: var(--at-primary);
+    transform: translateY(-2px);
+  }
+
+  /* Main Tasks Grid Section */
+  .content-section {
+    max-width: 1280px;
+    margin: 32px auto 60px;
+    padding: 0 24px;
+  }
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 24px;
+  }
+  .section-title {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .section-sub {
+    color: var(--at-text-muted);
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  .tasks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+  }
+
+  /* Task Card */
+  .task-card {
+    background: var(--at-card-bg);
+    border: 1px solid var(--at-border);
+    border-radius: 16px;
+    padding: 22px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: border-color .2s, transform .2s, box-shadow .2s;
+  }
+  .task-card:hover {
+    border-color: var(--at-primary);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+  }
+  .task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .task-title {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.4;
+    color: #fff;
+  }
+  .task-budget {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--at-primary);
+    white-space: nowrap;
+    text-align: right;
+  }
+  .budget-label {
+    font-size: 10px;
+    color: var(--at-text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .task-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--at-text-muted);
+    margin-bottom: 18px;
+  }
+  .task-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .task-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+    border-top: 1px solid var(--at-border);
+    font-size: 13px;
+  }
+  .task-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(20, 235, 192, 0.1);
+    color: var(--at-primary);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  /* Airtasker 3-Step Guide */
+  .guide-section {
+    background:#141418;
+    border-top:1px solid var(--at-border);
+    border-bottom:1px solid var(--at-border);
+    padding:60px 24px;
+  }
+
+  @media (max-width: 960px) {
+    .hero-container { grid-template-columns: 1fr; }
+    .hero-title { font-size: 38px; }
+    .nav-search { display: none; }
+    .tasks-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Global Header with Universal Multi-language Selector -->
+<header class="global-nav">
+  <div class="nav-inner">
+    <a href="/" class="logo">
+      go<span>live</span>.wiki
+      <span class="logo-badge" data-i18n="logo_sub">AIRTASKER EDITION</span>
+    </a>
+
+    <div class="nav-search">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+      <input type="text" data-i18n-ph="search_placeholder" placeholder="어떤 도움이 필요하신가요? (예: 이사, 청소, 조립, 개발)"/>
+    </div>
+
+    <div class="nav-actions">
+      <!-- Universal Language Switcher Component -->
+      <div class="lang-switcher-wrap">
+        <button class="lang-btn" onclick="toggleLangDropdown()">
+          <span id="current-lang-label">🇰🇷 KO</span>
+          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <div class="lang-dropdown" id="lang-dropdown">
+          <div style="font-size:11px; font-weight:700; color:var(--at-muted); padding:4px 8px; text-transform:uppercase;">Direct Native (완전번역)</div>
+          <div class="lang-opt" onclick="switchLanguage('ko')"><span>🇰🇷 한국어</span><span class="badge">KO</span></div>
+          <div class="lang-opt" onclick="switchLanguage('en')"><span>🇺🇸 English</span><span class="badge">EN</span></div>
+          <div class="lang-opt" onclick="switchLanguage('vi')"><span>🇻🇳 Tiếng Việt</span><span class="badge">VI</span></div>
+          <div class="lang-opt" onclick="switchLanguage('ja')"><span>🇯🇵 日本語</span><span class="badge">JA</span></div>
+          <div class="lang-opt" onclick="switchLanguage('zh')"><span>🇨🇳 中文</span><span class="badge">ZH</span></div>
+          <div class="lang-opt" onclick="switchLanguage('hi')"><span>🇮🇳 हिन्दी</span><span class="badge">HI</span></div>
+          <div class="lang-opt" onclick="switchLanguage('es')"><span>🇪🇸 Español</span><span class="badge">ES</span></div>
+          
+          <div class="lang-divider"></div>
+          <div style="font-size:11px; font-weight:700; color:var(--at-muted); padding:4px 8px; text-transform:uppercase;">기타 언어 (Google 번역)</div>
+          <div class="lang-opt" onclick="switchLanguage('google_more')"><span>🌐 More Languages...</span></div>
+        </div>
+      </div>
+
+      <a href="screens/04-dashboard.html" class="nav-link" data-i18n="nav_find_work">일 찾기</a>
+      <a href="screens/admin.html" class="nav-link" style="color:var(--at-primary); border:1px solid rgba(20,235,192,0.3); border-radius:999px;" data-i18n="nav_admin">관리자 콘솔</a>
+      <a href="screens/05-create-gig.html" class="btn-post-task" data-i18n="nav_post_task">
+        + 일 올리기 (무료)
+      </a>
+    </div>
+  </div>
+</header>
+
+<div id="google_translate_element"></div>
+
+<!-- Hero Section with Post a Task Focus -->
+<section class="hero-wrapper">
+  <div class="hero-container">
+    <div>
+      <div class="hero-tag">
+        <span class="live-dot"></span>
+        <span data-i18n="hero_live_tag">지금 실시간 2,847개 태스크 진행 중</span>
+      </div>
+      <h1 class="hero-title">
+        <span data-i18n="hero_title_1">동네 이웃과 함께,</span><br/>
+        <span data-i18n="hero_title_2">필요한 모든 일을 </span><span class="highlight" data-i18n="hero_title_highlight">깔끔하게 해결</span><span data-i18n="hero_title_3">하세요.</span>
+      </h1>
+      <p class="hero-desc" data-i18n="hero_desc">
+        원하는 일과 희망 예산을 올리고 검증된 동네 워커들에게 제안을 받아보세요. 
+        작업이 만족스럽게 완료될 때까지 결제 대금은 안전하게 에스크로에 보관됩니다.
+      </p>
+
+      <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+        <a href="screens/05-create-gig.html" class="btn-post-task" style="padding:14px 28px; font-size:16px;" data-i18n="hero_cta_post">
+          지금 바로 일 올리기
+        </a>
+        <a href="screens/04-dashboard.html" class="nav-link" style="font-size:16px; border:1px solid var(--at-border);" data-i18n="hero_cta_map">
+          실시간 태스크 지도 둘러보기 &rarr;
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick Post Widget -->
+    <div class="quick-post-card">
+      <h3>
+        <span data-i18n="qp_title">빠른 일 등록하기</span>
+        <span class="step-pill" data-i18n="qp_badge">1분 완료</span>
+      </h3>
+      <div class="input-group">
+        <label class="input-label" data-i18n="qp_label_what">무엇을 도와드릴까요?</label>
+        <input type="text" class="styled-input" data-i18n-ph="qp_ph_what" placeholder="예: 원룸 청소 및 이사 짐 정리"/>
+      </div>
+      <div class="input-group" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div>
+          <label class="input-label" data-i18n="qp_label_loc">희망 지역</label>
+          <input type="text" class="styled-input" data-i18n-ph="qp_ph_loc" placeholder="예: 서울 강남구"/>
+        </div>
+        <div>
+          <label class="input-label" data-i18n="qp_label_budget">희망 예산 (₩)</label>
+          <input type="text" class="styled-input" data-i18n-ph="qp_ph_budget" placeholder="60,000"/>
+        </div>
+      </div>
+      <a href="screens/05-create-gig.html" class="btn-post-task" style="width:100%; box-sizing:border-box; justify-content:center; padding:12px 0; margin-top:10px;" data-i18n="qp_btn_next">
+        다음 단계로 계속 (위자드 이동)
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Category Filter Pills -->
+<div class="category-section">
+  <div class="category-pills">
+    <a href="#" class="cat-pill active" data-i18n="cat_all">🔥 전체 실시간</a>
+    <a href="#" class="cat-pill" data-i18n="cat_cleaning">🧹 청소 & 정리</a>
+    <a href="#" class="cat-pill" data-i18n="cat_removal">📦 이사 & 용달</a>
+    <a href="#" class="cat-pill" data-i18n="cat_assembly">🔧 가구 조립 & 수리</a>
+    <a href="#" class="cat-pill" data-i18n="cat_it">💻 개발 & IT 지원</a>
+    <a href="#" class="cat-pill" data-i18n="cat_design">🎨 디자인 & 영상</a>
+    <a href="#" class="cat-pill" data-i18n="cat_pets">🐕 반려동물 케어</a>
+    <a href="#" class="cat-pill" data-i18n="cat_errands">🚗 심부름 & 배달</a>
+  </div>
+</div>
+
+<!-- Browse Live Tasks Grid -->
+<section class="content-section">
+  <div class="section-header">
+    <div>
+      <h2 class="section-title" data-i18n="browse_title">주변 실시간 의뢰</h2>
+      <p class="section-sub" data-i18n="browse_sub">워커들의 제안(Offer)을 기다리고 있는 최신 작업 목록입니다.</p>
+    </div>
+    <a href="screens/04-dashboard.html" class="nav-link" style="color:var(--at-primary);" data-i18n="browse_view_map">지도에서 보기 &rarr;</a>
+  </div>
+
+  <div class="tasks-grid">
+    <!-- Card 1 -->
+    <a href="screens/06-task-detail.html" class="task-card">
+      <div>
+        <div class="task-header">
+          <div class="task-title">강남구 논현동 원룸 입주 청소 (10평형)</div>
+          <div>
+            <div class="task-budget">₩85,000</div>
+            <div class="budget-label" data-i18n="budget_tag">예산</div>
+          </div>
+        </div>
+        <div class="task-meta">
+          <div class="task-meta-item">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+            <span>서울 강남구 논현동 · 1.4km</span>
+          </div>
+          <div class="task-meta-item">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span>오늘 오후 2시 이전 희망</span>
+          </div>
+        </div>
+      </div>
+      <div class="task-footer">
+        <span class="task-status-pill" data-i18n="status_open">OPEN FOR OFFERS</span>
+        <span style="color:var(--at-text-muted)">제안 3건</span>
+      </div>
+    </a>
+
+    <!-- Card 2 -->
+    <a href="screens/06-task-detail.html" class="task-card">
+      <div>
+        <div class="task-header">
+          <div class="task-title">이케아 3단 서랍장 & 책장 방문 조립</div>
+          <div>
+            <div class="task-budget">₩50,000</div>
+            <div class="budget-label" data-i18n="budget_tag">예산</div>
+          </div>
+        </div>
+        <div class="task-meta">
+          <div class="task-meta-item">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+            <span>서울 서초구 반포동 · 2.1km</span>
+          </div>
+          <div class="task-meta-item">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span>내일 오전 조율 가능</span>
+          </div>
+        </div>
+      </div>
+      <div class="task-footer">
+        <span class="task-status-pill" data-i18n="status_open">OPEN FOR OFFERS</span>
+        <span style="color:var(--at-text-muted)">제안 1건</span>
+      </div>
+    </a>
+
+    <!-- Card 3 -->
+    <a href="screens/06-task-detail.html" class="task-card">
+      <div>
+        <div class="task-header">
+          <div class="task-title">소형 1톤 트럭 용달 (매트리스 운반)</div>
+          <div>
+            <div class="task-budget">₩90,000</div>
+            <div class="budget-label" data-i18n="budget_tag">예산</div>
+          </div>
+        </div>
+        <div class="task-meta">
+          <div class="task-meta-item">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+            <span>역삼동 &rarr; 잠실동 · 3.5km</span>
+          </div>
+          <div class="task-meta-item">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span>이번 주 토요일 오전</span>
+          </div>
+        </div>
+      </div>
+      <div class="task-footer">
+        <span class="task-status-pill" data-i18n="status_open">OPEN FOR OFFERS</span>
+        <span style="color:var(--at-text-muted)">제안 5건</span>
+      </div>
+    </a>
+  </div>
+</section>
+
+<!-- Airtasker 3-Step Guide Section -->
+<section class="guide-section">
+  <div style="max-width:1280px; margin:0 auto; text-align:center;">
+    <h2 style="font-size:32px; font-weight:800; margin-bottom:12px;" data-i18n="how_title">어떻게 작동하나요?</h2>
+    <p style="color:var(--at-text-muted); margin-bottom:48px;" data-i18n="how_sub">Airtasker 검증 완료 프로세스로 안전하고 신속하게 연결됩니다.</p>
+    
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:32px; text-align:left;">
+      <div style="background:#0E0E11; border:1px solid var(--at-border); border-radius:16px; padding:32px;">
+        <div style="font-size:36px; font-weight:800; color:var(--at-primary); margin-bottom:16px; font-family:'JetBrains Mono';">01</div>
+        <h3 style="font-size:20px; font-weight:700; margin-bottom:8px;" data-i18n="step1_title">01 일 올리기 (Post a Task)</h3>
+        <p style="color:var(--at-text-muted); font-size:14px; line-height:1.6;" data-i18n="step1_desc">필요한 내용, 시간, 희망 예산을 작성하세요. 등록 수수료 없이 무료로 게시할 수 있습니다.</p>
+      </div>
+
+      <div style="background:#0E0E11; border:1px solid var(--at-border); border-radius:16px; padding:32px;">
+        <div style="font-size:36px; font-weight:800; color:var(--at-blue); margin-bottom:16px; font-family:'JetBrains Mono';">02</div>
+        <h3 style="font-size:20px; font-weight:700; margin-bottom:8px;" data-i18n="step2_title">02 제안 검토 & 선택 (Review Offers)</h3>
+        <p style="color:var(--at-text-muted); font-size:14px; line-height:1.6;" data-i18n="step2_desc">주변 워커들의 평점, 리뷰, 제안 금액을 비교하고 가장 적합한 전문가를 선택하세요.</p>
+      </div>
+
+      <div style="background:#0E0E11; border:1px solid var(--at-border); border-radius:16px; padding:32px;">
+        <div style="font-size:36px; font-weight:800; color:#10B981; margin-bottom:16px; font-family:'JetBrains Mono';">03</div>
+        <h3 style="font-size:20px; font-weight:700; margin-bottom:8px;" data-i18n="step3_title">03 안전 결제 & 완료 (Get Done)</h3>
+        <p style="color:var(--at-text-muted); font-size:14px; line-height:1.6;" data-i18n="step3_desc">일이 완전히 끝나고 승인할 때까지 결제 대금은 에스크로 계좌에 안전하게 묶여 있습니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer style="border-top:1px solid var(--at-border); padding:40px 24px; text-align:center; color:var(--at-text-muted); font-size:13px;">
+  <p>© 2026 golive.wiki · Multi-Language Global Marketplace (7 Native Languages + Google Translate Engine)</p>
+</footer>
+
+<script src="styles/i18n.js" defer></script>
+<script>
+  function toggleLangDropdown() {
+    const d = document.getElementById('lang-dropdown');
+    d.classList.toggle('show');
+  }
+
+  function switchLanguage(lang) {
+    applyLanguage(lang);
+    document.getElementById('lang-dropdown').classList.remove('show');
+  }
+  window.toggleLangDropdown = toggleLangDropdown;
+  window.switchLanguage = switchLanguage;
+
+  window.addEventListener('click', function(e) {
+    if (!e.target.closest('.lang-switcher-wrap')) {
+      const d = document.getElementById('lang-dropdown');
+      if (d) d.classList.remove('show');
+    }
+  });
+</script>
+
+</body>
+</html>
