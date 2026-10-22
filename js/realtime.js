@@ -29,6 +29,52 @@ export function subscribeRideEvents(onEvent) {
 }
 
 /** 채널 해제 */
+// Subscribe to offers (counter-offers) for a given task
+export async function subscribeOffers(taskId, onOffer) {
+  const channel = supabase
+    .channel(`offers-${taskId}`)
+    .on(
+      "postgres_changes",
+      { event: "INSERT", schema: "public", table: "offers", filter: `task_id=eq.${taskId}` },
+      (payload) => onOffer(payload.new)
+    )
+    .subscribe();
+  return channel;
+}
+
+// Publish a counter-offer back to the worker
+export async function publishCounterOffer(offerId, newAmount) {
+  const { data, error } = await supabase
+    .from("offers")
+    .update({
+      counter_offer: newAmount,
+      status: "countered",
+    })
+    .eq("id", offerId);
+  if (error) throw error;
+  return data;
+}
+
+export async function acceptOffer(offerId) {
+  const { data, error } = await supabase
+    .from("offers")
+    .update({ status: "accepted" })
+    .eq("id", offerId);
+  if (error) throw error;
+  // Update task status to matched
+  // (In production: also atomically decline other offers)
+  return data;
+}
+
+export async function declineOffer(offerId) {
+  const { data, error } = await supabase
+    .from("offers")
+    .update({ status: "declined" })
+    .eq("id", offerId);
+  if (error) throw error;
+  return data;
+}
+
 export function unsubscribe(channel) {
   sb.removeChannel(channel);
 }

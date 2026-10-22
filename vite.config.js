@@ -37,6 +37,7 @@ export default defineConfig({
         "screens-06-task-detail": resolve(__dirname, "screens-06-task-detail.html"),
         "screens-admin": resolve(__dirname, "screens-admin.html"),
         "screens-07-ride": resolve(__dirname, "screens-07-ride.html"),
+        "07-my-gigs": resolve(__dirname, "07-my-gigs.html"),
       },
       output: {
         entryFileNames: "assets/[name]-[hash].js",
@@ -44,7 +45,7 @@ export default defineConfig({
         assetFileNames: "assets/[name]-[hash][extname]",
       },
     },
-    target: "es2018",
+    target: "es2022",
   },
   server: {
     port: 5173,
