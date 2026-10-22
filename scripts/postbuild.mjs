@@ -56,3 +56,62 @@ for (const file of files) {
 
 const totalSavings = ((1 - totalAfter / totalBefore) * 100).toFixed(1);
 console.log(`\n✅ postbuild complete: ${(totalBefore/1024).toFixed(1)}KB → ${(totalAfter/1024).toFixed(1)}KB (${totalSavings}% smaller)`);
+
+// =====================================================================
+// Phase 5: Inject <link rel="alternate" hreflang="..."> tags into every
+// HTML file in dist/. This is a manual SEO best practice for sites
+// without per-locale URLs (we use single URLs with browser-detected
+// language switching rather than /ko/, /en/, etc. subpaths).
+//
+// Convention emitted:
+//   <link rel="alternate" hreflang="x-default" href="<page>">
+//   <link rel="alternate" hreflang="ko" href="<page>">
+//   <link rel="alternate" hreflang="en" href="<page>">
+//   ... (one per SUPPORTED_LANGS)
+//   <link rel="canonical" href="<page>">
+//
+// Notes:
+//   - x-default signals to Google which URL to show to users whose
+//     language preference doesn't match any of our 7 supported languages.
+//   - hreflang + canonical self-pointing is required because we serve
+//     the same URL regardless of language; hreflang tells crawlers that
+//     the URL is the canonical representation of all 7 translations.
+// =====================================================================
+const SUPPORTED_LANGS = ["ko", "en", "vi", "ja", "zh", "hi", "es"];
+const SITE_ORIGIN = "https://golive.wiki";
+
+const distDir = path.join(ROOT, "dist");
+const htmlFiles = fs.readdirSync(distDir).filter(f => f.endsWith(".html"));
+
+for (const file of htmlFiles) {
+  const filePath = path.join(distDir, file);
+  let html = fs.readFileSync(filePath, "utf-8");
+  // Use clean URL for the homepage: prefer "/" over "/index.html" because
+  // most web servers serve the same content for both. This avoids duplicate
+  // canonical signals and matches what users see in the address bar.
+  const pageUrl = file === "index.html"
+    ? `${SITE_ORIGIN}/`
+    : `${SITE_ORIGIN}/${file}`;
+
+  // Skip if we've already injected (idempotent on re-runs)
+  if (html.includes('rel="alternate" hreflang=')) {
+    continue;
+  }
+
+  const tags = [
+    `    <link rel="canonical" href="${pageUrl}">`,
+    `    <link rel="alternate" hreflang="x-default" href="${pageUrl}">`,
+    ...SUPPORTED_LANGS.map(lang =>
+      `    <link rel="alternate" hreflang="${lang}" href="${pageUrl}">`
+    ),
+  ].join("\n");
+
+  // Inject just before the closing </head>
+  if (html.includes("</head>")) {
+    html = html.replace("</head>", `${tags}\n  </head>`);
+    fs.writeFileSync(filePath, html, "utf-8");
+    totalAfter += 1;
+  }
+}
+
+console.log(`[postbuild] hreflang: injected into ${htmlFiles.length} HTML files`);

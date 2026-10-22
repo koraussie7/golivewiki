@@ -19,6 +19,7 @@ const HTML_FILES = [
   "screens-05-create-gig.html",
   "screens-06-task-detail.html",
   "screens-07-ride.html",
+  "07-my-gigs.html",
   "screens-admin.html",
 ];
 

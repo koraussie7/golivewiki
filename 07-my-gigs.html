@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>golive.wiki — 내 의뢰 목록</title>
+<link rel="stylesheet" href="./styles/tokens.css"/>
+<script src="./styles/i18n.js" defer type="module"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --at-primary: #14EBC0;
+    --at-blue: #0A65FC;
+    --at-dark: #09090B;
+    --at-surface: #141418;
+    --at-border: #27272A;
+    --at-text: #FAFAFA;
+    --at-muted: #A1A1AA;
+    --at-warn: #F59E0B;
+    --at-success: #22C55E;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--at-dark);
+    color: var(--at-text);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    background: #0e0e11;
+    border-bottom: 1px solid var(--at-border);
+  }
+  .nav .logo {
+    font-weight: 800;
+    font-size: 19px;
+    color: #fff;
+    text-decoration: none;
+  }
+  .nav .logo span { color: var(--at-primary); }
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .nav-link {
+    color: var(--at-muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    transition: color 0.15s ease;
+  }
+  .nav-link:hover { color: var(--at-text); }
+  .btn-primary {
+    background: var(--at-primary);
+    color: #09090B;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: none;
+    cursor: pointer;
+  }
+  .lang-switcher-wrap { position: relative; }
+  .lang-btn {
+    background: transparent;
+    border: 1px solid var(--at-border);
+    color: var(--at-text);
+    padding: 6px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .lang-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: #0e0e11;
+    border: 1px solid var(--at-border);
+    border-radius: 12px;
+    padding: 6px;
+    min-width: 220px;
+    z-index: 100;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .lang-dropdown.show { display: block; }
+  .lang-opt {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--at-text);
+  }
+  .lang-opt:hover { background: rgba(20, 235, 192, 0.08); }
+  .lang-opt .badge {
+    font-size: 10px;
+    color: var(--at-muted);
+    border: 1px solid var(--at-border);
+    border-radius: 999px;
+    padding: 1px 6px;
+  }
+  .lang-divider {
+    height: 1px;
+    background: var(--at-border);
+    margin: 4px 0;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 32px auto 80px;
+    padding: 0 24px;
+  }
+  .page-title {
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .page-sub {
+    color: var(--at-muted);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  /* Status filter pills */
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .filter-pill {
+    background: #141418;
+    border: 1px solid var(--at-border);
+    color: var(--at-muted);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .filter-pill:hover { color: var(--at-text); }
+  .filter-pill.active {
+    background: rgba(20, 235, 192, 0.12);
+    border-color: var(--at-primary);
+    color: var(--at-primary);
+  }
+
+  /* Empty state */
+  .empty {
+    background: #0e0e11;
+    border: 1px dashed var(--at-border);
+    border-radius: 16px;
+    padding: 60px 24px;
+    text-align: center;
+    margin-top: 32px;
+  }
+  .empty-emoji { font-size: 48px; margin-bottom: 12px; }
+  .empty h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .empty p { color: var(--at-muted); font-size: 14px; margin-bottom: 20px; }
+
+  /* Gig cards */
+  .gig-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .gig-card {
+    background: #0e0e11;
+    border: 1px solid var(--at-border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 16px;
+    align-items: center;
+    transition: border-color 0.15s ease;
+  }
+  .gig-card:hover { border-color: var(--at-primary); }
+  .gig-emoji {
+    width: 48px;
+    height: 48px;
+    background: #141418;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+  }
+  .gig-body { min-width: 0; }
+  .gig-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .gig-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--at-muted);
+    margin-bottom: 6px;
+  }
+  .gig-meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+  }
+  .status-open {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--at-warn);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+  }
+  .status-matched {
+    background: rgba(20, 235, 192, 0.12);
+    color: var(--at-primary);
+    border: 1px solid rgba(20, 235, 192, 0.3);
+  }
+  .status-done {
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--at-success);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+  .gig-amount {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--at-primary);
+    text-align: right;
+  }
+  .gig-amount small {
+    display: block;
+    font-family: inherit;
+    font-size: 11px;
+    color: var(--at-muted);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+
+  /* Summary chips */
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: #0e0e11;
+    border: 1px solid var(--at-border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .summary-card .label {
+    font-size: 11px;
+    color: var(--at-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 6px;
+  }
+  .summary-card .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .summary-card .value.primary { color: var(--at-primary); }
+
+  @media (max-width: 720px) {
+    .summary { grid-template-columns: repeat(2, 1fr); }
+    .gig-card { grid-template-columns: auto 1fr; }
+    .gig-amount { grid-column: 2; text-align: left; }
+  }
+</style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="https://golive.wiki/" class="logo">go<span>live</span>.wiki</a>
+    <div class="nav-actions">
+      <div class="lang-switcher-wrap">
+        <button class="lang-btn" onclick="toggleLangDropdown()">
+          <span id="current-lang-label">🇰🇷 KO</span>
+          <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <div class="lang-dropdown" id="lang-dropdown">
+          <div class="lang-opt" onclick="switchLanguage('ko')"><span>🇰🇷 한국어</span><span class="badge">KO</span></div>
+          <div class="lang-opt" onclick="switchLanguage('en')"><span>🇺🇸 English</span><span class="badge">EN</span></div>
+          <div class="lang-opt" onclick="switchLanguage('vi')"><span>🇻🇳 Tiếng Việt</span><span class="badge">VI</span></div>
+          <div class="lang-opt" onclick="switchLanguage('ja')"><span>🇯🇵 日本語</span><span class="badge">JA</span></div>
+          <div class="lang-opt" onclick="switchLanguage('zh')"><span>🇨🇳 中文</span><span class="badge">ZH</span></div>
+          <div class="lang-opt" onclick="switchLanguage('hi')"><span>🇮🇳 हिन्दी</span><span class="badge">HI</span></div>
+          <div class="lang-opt" onclick="switchLanguage('es')"><span>🇪🇸 Español</span><span class="badge">ES</span></div>
+          <div class="lang-divider"></div>
+          <div class="lang-opt" onclick="switchLanguage('google_more')"><span>🌐 More Languages...</span></div>
+        </div>
+      </div>
+      <a href="https://golive.wiki/screens-04-dashboard.html" class="nav-link" data-i18n="nav_find_work">일 찾기</a>
+      <a href="https://golive.wiki/screens-05-create-gig.html" class="btn-primary" data-i18n="nav_post_task">+ 일 올리기</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title" data-i18n="mygigs_title">내 의뢰 목록</h1>
+    <p class="page-sub" data-i18n="mygigs_sub">내가 등록한 의뢰와 워커 매칭 현황을 한눈에 확인하세요.</p>
+
+    <!-- Summary chips -->
+    <div class="summary" id="summary">
+      <div class="summary-card">
+        <div class="label" data-i18n="mygigs_summary_total">전체 의뢰</div>
+        <div class="value" id="sum-total">0</div>
+      </div>
+      <div class="summary-card">
+        <div class="label" data-i18n="mygigs_summary_open">매칭 대기</div>
+        <div class="value" id="sum-open" style="color:var(--at-warn);">0</div>
+      </div>
+      <div class="summary-card">
+        <div class="label" data-i18n="mygigs_summary_matched">매칭 완료</div>
+        <div class="value" id="sum-matched" class="primary">0</div>
+      </div>
+      <div class="summary-card">
+        <div class="label" data-i18n="mygigs_summary_spent">지급 예정</div>
+        <div class="value primary" id="sum-spent">₩0</div>
+      </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="filter-row" id="filter-row">
+      <button class="filter-pill active" data-filter="all" data-i18n="filter_all">전체</button>
+      <button class="filter-pill" data-filter="open" data-i18n="filter_open">대기 중</button>
+      <button class="filter-pill" data-filter="matched" data-i18n="filter_matched">매칭됨</button>
+      <button class="filter-pill" data-filter="done" data-i18n="filter_done">완료</button>
+    </div>
+
+    <!-- Empty state (shown when no gigs match the filter) -->
+    <div class="empty" id="empty-state" hidden>
+      <div class="empty-emoji">📋</div>
+      <h3 data-i18n="mygigs_empty_title">아직 의뢰가 없어요</h3>
+      <p data-i18n="mygigs_empty_sub">의뢰를 등록하면 워커들이 카운터오퍼를 보내기 시작합니다.</p>
+      <a href="https://golive.wiki/screens-05-create-gig.html" class="btn-primary" data-i18n="mygigs_empty_cta">+ 첫 의뢰 등록하기</a>
+    </div>
+
+    <!-- Gig list -->
+    <div class="gig-list" id="gig-list"></div>
+  </div>
+
+  <script type="module">
+    // Read state from localStorage (written by services-app.js on task:created / offer:accepted).
+    // Falls back to in-memory placeholder data on first visit.
+    const STORAGE_KEY = "golivewiki_my_gigs_v1";
+
+    function loadGigs() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) { /* ignore */ }
+      // First-visit demo data so the page never feels empty
+      return [
+        {
+          id: "demo-1",
+          title: "강남구 논현동 원룸 입주 청소 (10평형)",
+          emoji: "🧹",
+          amount: 85000,
+          location: "서울 강남구 논현동",
+          when: "오늘 14:00",
+          status: "open",
+          offers: 3,
+          createdAt: "방금 전",
+        },
+        {
+          id: "demo-2",
+          title: "이케아 3단 서랍장 & 책장 방문 조립",
+          emoji: "🔧",
+          amount: 50000,
+          location: "서울 서초구 반포동",
+          when: "내일 오전",
+          status: "matched",
+          matchedWorker: "박정훈 클린",
+          offers: 2,
+          createdAt: "1시간 전",
+        },
+        {
+          id: "demo-3",
+          title: "삼성동 소형 사무실 LED 레일 조명 교체",
+          emoji: "💡",
+          amount: 65000,
+          location: "서울 강남구 삼성동",
+          when: "이번 주 내",
+          status: "done",
+          matchedWorker: "김지원",
+          rating: 5.0,
+          createdAt: "3일 전",
+        },
+      ];
+    }
+
+    function saveGigs(gigs) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(gigs)); } catch (e) { /* ignore */ }
+    }
+
+    function statusLabel(s) {
+      return ({
+        open: "OPEN · 카운터오퍼 대기",
+        matched: "MATCHED · 워커 확정",
+        done: "DONE · 완료",
+      })[s] || s;
+    }
+
+    function fmtAmount(n) {
+      if (typeof n !== "number") return "₩—";
+      return "₩" + n.toLocaleString("ko-KR");
+    }
+
+    let currentFilter = "all";
+    function render() {
+      const all = loadGigs();
+      const filtered = currentFilter === "all" ? all : all.filter(g => g.status === currentFilter);
+
+      // Summary
+      const total = all.length;
+      const open = all.filter(g => g.status === "open").length;
+      const matched = all.filter(g => g.status === "matched").length;
+      const spent = all.filter(g => g.status === "matched" || g.status === "done")
+        .reduce((sum, g) => sum + (typeof g.amount === "number" ? g.amount : 0), 0);
+      document.getElementById("sum-total").textContent = total;
+      document.getElementById("sum-open").textContent = open;
+      document.getElementById("sum-matched").textContent = matched;
+      document.getElementById("sum-spent").textContent = fmtAmount(spent);
+
+      // List
+      const list = document.getElementById("gig-list");
+      const empty = document.getElementById("empty-state");
+      list.innerHTML = "";
+      if (filtered.length === 0) {
+        empty.hidden = false;
+        return;
+      }
+      empty.hidden = true;
+      for (const g of filtered) {
+        const card = document.createElement("div");
+        card.className = "gig-card";
+        const statusClass = `status-${g.status}`;
+        card.innerHTML = `
+          <div class="gig-emoji">${g.emoji || "📌"}</div>
+          <div class="gig-body">
+            <div class="gig-title">${escapeHtml(g.title)}</div>
+            <div class="gig-meta">
+              ${g.location ? `<span>📍 ${escapeHtml(g.location)}</span>` : ""}
+              ${g.when ? `<span>⏰ ${escapeHtml(g.when)}</span>` : ""}
+              ${g.createdAt ? `<span>🕒 ${escapeHtml(g.createdAt)}</span>` : ""}
+            </div>
+            <span class="status-badge ${statusClass}">${statusLabel(g.status)}</span>
+          </div>
+          <div class="gig-amount">
+            ${fmtAmount(g.amount)}
+            ${g.status === "open" ? `<small>${g.offers || 0}건 제안</small>` : ""}
+            ${g.status === "matched" && g.matchedWorker ? `<small>👤 ${escapeHtml(g.matchedWorker)}</small>` : ""}
+            ${g.status === "done" && g.rating ? `<small>★ ${g.rating}</small>` : ""}
+          </div>
+        `;
+        list.appendChild(card);
+      }
+    }
+
+        function escapeHtml(s) {
+      if (s == null) return "";
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, '&#39;');
+    }
+
+    // Filter pill handlers
+    document.getElementById("filter-row").addEventListener("click", (e) => {
+      const pill = e.target.closest(".filter-pill");
+      if (!pill) return;
+      document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
+      pill.classList.add("active");
+      currentFilter = pill.dataset.filter || "all";
+      render();
+    });
+
+    // Live update: if other tabs/pages write to localStorage, re-render.
+    window.addEventListener("storage", (e) => {
+      if (e.key === STORAGE_KEY) render();
+    });
+
+    // Inline language switcher fallback (mirrors index.html)
+    function toggleLangDropdown() {
+      const d = document.getElementById("lang-dropdown");
+      if (d) d.classList.toggle("show");
+    }
+    function switchLanguage(lang) {
+      if (typeof applyLanguage === "function") applyLanguage(lang);
+      const d = document.getElementById("lang-dropdown");
+      if (d) d.classList.remove("show");
+    }
+    window.addEventListener("click", function(e) {
+      if (!e.target.closest(".lang-switcher-wrap")) {
+        const d = document.getElementById("lang-dropdown");
+        if (d) d.classList.remove("show");
+      }
+    });
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", render);
+    } else {
+      render();
+    }
+  </script>
+</body>
+</html>
