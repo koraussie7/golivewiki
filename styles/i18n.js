@@ -7,6 +7,24 @@
  */
 
 const I18N_DICTIONARY = {
+  user_locating: {
+    ko: "현재 위치를 찾는 중…",
+    en: "Locating you…",
+    vi: "Đang xác định vị trí…",
+    ja: "現在地を取得中…",
+    zh: "正在获取位置…",
+    hi: "आपका स्थान खोजा जा रहा है…",
+    es: "Localizando tu ubicación…",
+  },
+  user_location_denied: {
+    ko: "위치 권한이 거부되어 기본 지도를 표시합니다",
+    en: "Location permission denied — showing default map",
+    vi: "Quyền vị trí bị từ chối — hiển thị bản đồ mặc định",
+    ja: "位置情報の許可がありません — デフォルトの地図を表示",
+    zh: "位置权限被拒绝 — 显示地图默认位置",
+    hi: "स्थान अनुमति अस्वीकृत — डिफ़ॉल्ट मानचित्र दिखाया जा रहा है",
+    es: "Permiso de ubicación denegado — mostrando mapa predeterminado",
+  },
   ko: {
     logo_sub: "에어태스커 에디션",
     nav_find_work: "일 찾기",
@@ -220,6 +238,49 @@ const I18N_DICTIONARY = {
     ride_matching_desc: "주변 기사들에게 귀하의 요금 제의를 전송하고 있습니다.",
     ride_ontrip_desc: "지도를 통해 실시간 위치를 확인할 수 있습니다.",
     ride_done_desc: "안전하게 목적지에 도착하셨습니다. 기사님을 평가해 주세요.",
+    // === screens-07-ride: inDrive-style counter-offer flow ===
+    reqflow_step1_title: "어떤 서비스가 필요하신가요?",
+    reqflow_step1_sub: "가장 인기 있는 카테고리 18개에서 선택하세요. inDrive 스타일로 여러 기사에게 동시에 카운터오퍼를 받습니다.",
+    reqflow_step2_sub: "작업 내용과 희망 가격을 입력하세요. 워커들이 카운터오퍼를 보냅니다.",
+    reqflow_step3_title: "워커 카운터오퍼 수신 중",
+    reqflow_step3_sub: "반경 3km 내 워커들에게 실시간 매칭 요청을 보냈습니다",
+    reqflow_btn_request_quote: "호출하기 (워커 매칭)",
+    reqflow_btn_back_categories: "← 카테고리로 돌아가기",
+    reqflow_btn_edit_request: "← 의뢰 수정하기",
+    reqflow_offers_count_0: "받은 제안 0건",
+    reqflow_when_today: "오늘 즉시",
+    reqflow_when_tomorrow: "내일",
+    reqflow_when_this_week: "이번 주 내",
+    reqflow_when_negotiable: "워커와 조율",
+    reqflow_label_title: "작업 제목",
+    reqflow_label_desc: "상세 설명",
+    reqflow_label_location: "작업 위치",
+    reqflow_label_when: "희망 일시",
+    reqflow_label_my_offer: "내 제안가",
+    reqflow_label_suggested: "시스템 추천가",
+    reqflow_form_task: "작업 정보",
+    reqflow_form_offer: "내 제안 가격 (inDrive식)",
+    reqflow_form_offer_sub: "inDrive는 사용자가 자유롭게 가격을 제안하는 방식입니다. 시스템 추천가보다 낮게 제시하면 더 많은 기사 매칭을 받습니다.",
+    ph_task_title: "예: 논현동 1톤 트럭 이사",
+    ph_task_desc: "작업 범위, 필요한 도구, 주의사항 등을 자세히 적어주세요",
+    ph_task_location: "예: 서울 강남구 테헤란로 152",
+    mygigs_title: "내 의뢰 목록",
+    mygigs_sub: "내가 등록한 의뢰와 워커 매칭 현황을 한눈에 확인하세요.",
+    mygigs_summary_total: "전체 의뢰",
+    mygigs_summary_open: "매칭 대기",
+    mygigs_summary_matched: "매칭 완료",
+    mygigs_summary_spent: "지급 예정",
+    filter_all: "전체",
+    filter_open: "대기 중",
+    filter_matched: "매칭됨",
+    filter_done: "완료",
+    mygigs_empty_title: "아직 의뢰가 없어요",
+    mygigs_empty_sub: "의뢰를 등록하면 워커들이 카운터오퍼를 보내기 시작합니다.",
+    mygigs_empty_cta: "+ 첫 의뢰 등록하기",
+    layer_demand: "🔥 수요 히트맵",
+    layer_risk: "⚠️ 안전 알림",
+    layer_signals: "📡 실시간 신호",
+    layer_valuation: "💎 적정가 가이드",
   },
 
   en: {
@@ -430,6 +491,49 @@ const I18N_DICTIONARY = {
     ride_matching_desc: "Sending your fare offer to nearby drivers...",
     ride_ontrip_desc: "Track live location on the map.",
     ride_done_desc: "Arrived safely. Please rate the driver.",
+    // === screens-07-ride: inDrive-style counter-offer flow ===
+    reqflow_step1_title: "What service do you need?",
+    reqflow_step1_sub: "Choose from 18 most popular categories. Get counter-offers from multiple drivers simultaneously, inDrive style.",
+    reqflow_step2_sub: "Enter task details and your desired price. Workers will send counter-offers.",
+    reqflow_step3_title: "Receiving worker counter-offers",
+    reqflow_step3_sub: "Sent real-time matching request to workers within 3km radius",
+    reqflow_btn_request_quote: "Request (match workers)",
+    reqflow_btn_back_categories: "← Back to categories",
+    reqflow_btn_edit_request: "← Edit request",
+    reqflow_offers_count_0: "0 offers received",
+    reqflow_when_today: "Today, immediate",
+    reqflow_when_tomorrow: "Tomorrow",
+    reqflow_when_this_week: "This week",
+    reqflow_when_negotiable: "Negotiable with worker",
+    reqflow_label_title: "Task title",
+    reqflow_label_desc: "Detailed description",
+    reqflow_label_location: "Location",
+    reqflow_label_when: "Preferred time",
+    reqflow_label_my_offer: "My offer",
+    reqflow_label_suggested: "System suggested price",
+    reqflow_form_task: "Task info",
+    reqflow_form_offer: "My offer (inDrive style)",
+    reqflow_form_offer_sub: "inDrive lets you freely propose a price. Proposing below the system-recommended price increases matching.",
+    ph_task_title: "e.g. Nonhyeon-dong 1-ton truck move",
+    ph_task_desc: "Describe scope, tools needed, special notes",
+    ph_task_location: "e.g. 152 Teheran-ro, Gangnam-gu, Seoul",
+    mygigs_title: "My Gigs",
+    mygigs_sub: "Track your posted requests and matching status at a glance.",
+    mygigs_summary_total: "Total",
+    mygigs_summary_open: "Pending",
+    mygigs_summary_matched: "Matched",
+    mygigs_summary_spent: "To Pay",
+    filter_all: "All",
+    filter_open: "Open",
+    filter_matched: "Matched",
+    filter_done: "Done",
+    mygigs_empty_title: "No gigs yet",
+    mygigs_empty_sub: "Post a request and nearby workers will start sending counter-offers.",
+    mygigs_empty_cta: "+ Post your first gig",
+    layer_demand: "🔥 Demand heatmap",
+    layer_risk: "⚠️ Safety alerts",
+    layer_signals: "📡 Live signals",
+    layer_valuation: "💎 Fair-price guide",
   },
 
   vi: {
@@ -639,6 +743,49 @@ const I18N_DICTIONARY = {
     ride_matching_desc: "Đang gửi giá yêu cầu của bạn đến các tài xế xung quanh...",
     ride_ontrip_desc: "Theo dõi vị trí thực时 trên bản đồ.",
     ride_done_desc: "Đã đến đích an toàn. Vui lòng đánh giá tài xế.",
+    // === screens-07-ride: inDrive-style counter-offer flow ===
+    reqflow_step1_title: "Bạn cần dịch vụ gì?",
+    reqflow_step1_sub: "Chọn từ 18 danh mục phổ biến nhất. Nhận đề nghị đối ứng từ nhiều worker cùng lúc, phong cách inDrive.",
+    reqflow_step2_sub: "Nhập chi tiết task và giá mong muốn. Worker sẽ gửi đề nghị đối ứng.",
+    reqflow_step3_title: "Đang nhận đề nghị đối ứng",
+    reqflow_step3_sub: "Đã gửi yêu cầu matching thời gian thực đến worker trong bán kính 3km",
+    reqflow_btn_request_quote: "Gửi yêu cầu (matching worker)",
+    reqflow_btn_back_categories: "← Về danh mục",
+    reqflow_btn_edit_request: "← Sửa yêu cầu",
+    reqflow_offers_count_0: "0 đề nghị nhận",
+    reqflow_when_today: "Hôm nay, ngay",
+    reqflow_when_tomorrow: "Ngày mai",
+    reqflow_when_this_week: "Tuần này",
+    reqflow_when_negotiable: "Thương lượng với worker",
+    reqflow_label_title: "Tiêu đề task",
+    reqflow_label_desc: "Mô tả chi tiết",
+    reqflow_label_location: "Địa điểm",
+    reqflow_label_when: "Thời gian mong muốn",
+    reqflow_label_my_offer: "Giá đề nghị của tôi",
+    reqflow_label_suggested: "Giá hệ thống gợi ý",
+    reqflow_form_task: "Thông tin task",
+    reqflow_form_offer: "Giá đề nghị của tôi (kiểu inDrive)",
+    reqflow_form_offer_sub: "inDrive cho phép bạn tự do đề nghị giá. Đề nghị thấp hơn giá hệ thống gợi ý sẽ tăng matching.",
+    ph_task_title: "vd: Nonhyeon-dong xe tải 1 tấn",
+    ph_task_desc: "Mô tả phạm vi, công cụ cần thiết, lưu ý đặc biệt",
+    ph_task_location: "vd: 152 Teheran-ro, Gangnam-gu, Seoul",
+    mygigs_title: "Yêu cầu của tôi",
+    mygigs_sub: "Theo dõi các yêu cầu đã đăng và tình trạng ghép nối.",
+    mygigs_summary_total: "Tổng cộng",
+    mygigs_summary_open: "Chờ",
+    mygigs_summary_matched: "Đã khớp",
+    mygigs_summary_spent: "Sẽ thanh toán",
+    filter_all: "Tất cả",
+    filter_open: "Đang chờ",
+    filter_matched: "Đã khớp",
+    filter_done: "Hoàn tất",
+    mygigs_empty_title: "Chưa có yêu cầu nào",
+    mygigs_empty_sub: "Đăng yêu cầu và thợ sẽ bắt đầu gửi đề nghị.",
+    mygigs_empty_cta: "+ Đăng yêu cầu đầu tiên",
+    layer_demand: "🔥 Bản đồ nhu cầu",
+    layer_risk: "⚠️ Cảnh báo an toàn",
+    layer_signals: "📡 Tín hiệu trực tiếp",
+    layer_valuation: "💎 Hướng dẫn giá",
   },
 
   ja: {
@@ -845,6 +992,49 @@ const I18N_DICTIONARY = {
     ride_matching_desc: "近くの運転手に運賃オファーを送信中です。",
     ride_ontrip_desc: "マップでリアルタイム位置を確認できます。",
     ride_done_desc: "安全に目的地に到着しました。運転手を評価してください。",
+    // === screens-07-ride: inDrive-style counter-offer flow ===
+    reqflow_step1_title: "どのようなサービスが必要ですか?",
+    reqflow_step1_sub: "最も人気の18カテゴリから選択。inDriveスタイルで複数の業者から同時に対抗オファーを受けます。",
+    reqflow_step2_sub: "作業内容と希望価格を入力してください。ワーカーが対抗オファーを送ります。",
+    reqflow_step3_title: "ワーカーからの対抗オファーを受信中",
+    reqflow_step3_sub: "半径3km以内のワーカーにリアルタイムマッチングリクエストを送信しました",
+    reqflow_btn_request_quote: "リクエスト送信 (ワーカーマッチング)",
+    reqflow_btn_back_categories: "← カテゴリに戻る",
+    reqflow_btn_edit_request: "← リクエストを編集",
+    reqflow_offers_count_0: "0件の提案を受信",
+    reqflow_when_today: "本日すぐ",
+    reqflow_when_tomorrow: "明日",
+    reqflow_when_this_week: "今週中",
+    reqflow_when_negotiable: "ワーカーと相談",
+    reqflow_label_title: "タスクのタイトル",
+    reqflow_label_desc: "詳細説明",
+    reqflow_label_location: "作業場所",
+    reqflow_label_when: "希望日時",
+    reqflow_label_my_offer: "私の提案価格",
+    reqflow_label_suggested: "システム推奨価格",
+    reqflow_form_task: "タスク情報",
+    reqflow_form_offer: "私の提案価格 (inDrive式)",
+    reqflow_form_offer_sub: "inDriveはユーザーが自由に価格を提案する方式です。システム推奨価格より低く提示すると、より多くの業者マッチングを受けられます。",
+    ph_task_title: "例: 論峴洞1トントラック引っ越し",
+    ph_task_desc: "作業範囲、必要な道具、注意事項を詳しく記入してください",
+    ph_task_location: "例: ソウル特別市江南区テヘラン路152",
+    mygigs_title: "依頼一覧",
+    mygigs_sub: "投稿した依頼とマッチング状況を一目で確認できます。",
+    mygigs_summary_total: "全依頼",
+    mygigs_summary_open: "待機中",
+    mygigs_summary_matched: "成立済",
+    mygigs_summary_spent: "支払予定",
+    filter_all: "全て",
+    filter_open: "待機中",
+    filter_matched: "成立",
+    filter_done: "完了",
+    mygigs_empty_title: "依頼はまだありません",
+    mygigs_empty_sub: "依頼を投稿すると近隣ワーカーからカウンターオファーが届きます。",
+    mygigs_empty_cta: "+ 最初の依頼を投稿",
+    layer_demand: "🔥 需要ヒートマップ",
+    layer_risk: "⚠️ 安全アラート",
+    layer_signals: "📡 リアルタイム信号",
+    layer_valuation: "💎 適正価格ガイド",
   },
 
   zh: {
@@ -1050,6 +1240,49 @@ const I18N_DICTIONARY = {
     ride_matching_desc: "正在将您的车费报价发送给附近的司机...",
     ride_ontrip_desc: "在地图上实时查看位置。",
     ride_done_desc: "已安全到达目的地。请评价司机。",
+    // === screens-07-ride: inDrive-style counter-offer flow ===
+    reqflow_step1_title: "您需要什么服务?",
+    reqflow_step1_sub: "从18个最受欢迎的类别中选择。同时收到多个司机的反向报价,inDrive 风格。",
+    reqflow_step2_sub: "输入任务详情和期望价格。工作者将发送反向报价。",
+    reqflow_step3_title: "正在接收工作者反向报价",
+    reqflow_step3_sub: "已向3公里范围内的工作者发送实时匹配请求",
+    reqflow_btn_request_quote: "发布 (工作者匹配)",
+    reqflow_btn_back_categories: "← 返回类别",
+    reqflow_btn_edit_request: "← 编辑请求",
+    reqflow_offers_count_0: "已收到 0 份报价",
+    reqflow_when_today: "今天立即",
+    reqflow_when_tomorrow: "明天",
+    reqflow_when_this_week: "本周内",
+    reqflow_when_negotiable: "与工作者协商",
+    reqflow_label_title: "任务标题",
+    reqflow_label_desc: "详细说明",
+    reqflow_label_location: "工作地点",
+    reqflow_label_when: "期望时间",
+    reqflow_label_my_offer: "我的报价",
+    reqflow_label_suggested: "系统建议价格",
+    reqflow_form_task: "任务信息",
+    reqflow_form_offer: "我的报价 (inDrive 式)",
+    reqflow_form_offer_sub: "inDrive 让您自由报价。报价低于系统建议价格会增加匹配。",
+    ph_task_title: "例：论岘洞 1 吨货车搬家",
+    ph_task_desc: "请详细描述工作范围、所需工具和注意事项",
+    ph_task_location: "例：首尔特别市江南区德黑兰路 152",
+    mygigs_title: "我的委托",
+    mygigs_sub: "一目了然查看我发布的委托及匹配情况。",
+    mygigs_summary_total: "全部",
+    mygigs_summary_open: "待匹配",
+    mygigs_summary_matched: "已匹配",
+    mygigs_summary_spent: "待支付",
+    filter_all: "全部",
+    filter_open: "待匹配",
+    filter_matched: "已匹配",
+    filter_done: "已完成",
+    mygigs_empty_title: "还没有委托",
+    mygigs_empty_sub: "发布委托后,附近的师傅会开始发来反报价。",
+    mygigs_empty_cta: "+ 发布第一个委托",
+    layer_demand: "🔥 需求热力图",
+    layer_risk: "⚠️ 安全警报",
+    layer_signals: "📡 实时信号",
+    layer_valuation: "💎 合理价指南",
   },
 
   hi: {
@@ -1258,6 +1491,49 @@ const I18N_DICTIONARY = {
     ride_matching_desc: "आपका किराया प्रस्ताव आस-पास के ड्राइवरों को भेजा जा रहा है...",
     ride_ontrip_desc: "मानचित्र पर लाइव स्थान देखें।",
     ride_done_desc: "आप सुरक्षित गंतव्य पर पहुँच गए हैं। कृपया ड्राइवर को रेट करें।",
+    // === screens-07-ride: inDrive-style counter-offer flow ===
+    reqflow_step1_title: "आपको कौन सी सेवा चाहिए?",
+    reqflow_step1_sub: "18 सबसे लोकप्रिय श्रेणियों में से चुनें। एक साथ कई ड्राइवरों से काउंटर-ऑफ़र प्राप्त करें, inDrive शैली में।",
+    reqflow_step2_sub: "कार्य विवरण और वांछित मूल्य दर्ज करें। वर्कर काउंटर-ऑफ़र भेजेंगे।",
+    reqflow_step3_title: "वर्कर काउंटर-ऑफ़र प्राप्त हो रहे हैं",
+    reqflow_step3_sub: "3 किमी के दायरे में वर्करों को रीयलटाइम मिलान अनुरोध भेजा गया",
+    reqflow_btn_request_quote: "अनुरोध भेजें (वर्कर मिलान)",
+    reqflow_btn_back_categories: "← श्रेणियों पर वापस",
+    reqflow_btn_edit_request: "← अनुरोध संपादित करें",
+    reqflow_offers_count_0: "0 ऑफ़र प्राप्त",
+    reqflow_when_today: "आज, तुरंत",
+    reqflow_when_tomorrow: "कल",
+    reqflow_when_this_week: "इस सप्ताह",
+    reqflow_when_negotiable: "वर्कर के साथ बातचीत",
+    reqflow_label_title: "कार्य शीर्षक",
+    reqflow_label_desc: "विस्तृत विवरण",
+    reqflow_label_location: "स्थान",
+    reqflow_label_when: "पसंदीदा समय",
+    reqflow_label_my_offer: "मेरी पेशकश",
+    reqflow_label_suggested: "सिस्टम सुझाया मूल्य",
+    reqflow_form_task: "कार्य जानकारी",
+    reqflow_form_offer: "मेरी पेशकश (inDrive शैली)",
+    reqflow_form_offer_sub: "inDrive आपको स्वतंत्र रूप से मूल्य प्रस्तावित करने देता है। सिस्टम-सुझाए गए मूल्य से कम प्रस्ताव करने पर मिलान बढ़ता है।",
+    ph_task_title: "उदा. नोन्हयोंग-डोंग 1-टन ट्रक मूव",
+    ph_task_desc: "कार्य सीमा, आवश्यक उपकरण, विशेष नोट्स बताएँ",
+    ph_task_location: "उदा. 152 तेहरान-रो, गैंगनाम-गु, सियोल",
+    mygigs_title: "मेरे काम",
+    mygigs_sub: "अपने पोस्ट किए गए अनुरोधों और मिलान स्थिति को देखें।",
+    mygigs_summary_total: "कुल",
+    mygigs_summary_open: "लंबित",
+    mygigs_summary_matched: "मिलान हुआ",
+    mygigs_summary_spent: "भुगतान",
+    filter_all: "सभी",
+    filter_open: "लंबित",
+    filter_matched: "मिलान",
+    filter_done: "पूर्ण",
+    mygigs_empty_title: "अभी कोई काम नहीं",
+    mygigs_empty_sub: "अनुरोध पोस्ट करें और आसपास के कारीगर प्रस्ताव भेजेंगे।",
+    mygigs_empty_cta: "+ पहला काम पोस्ट करें",
+    layer_demand: "🔥 डिमांड हीटमैप",
+    layer_risk: "⚠️ सुरक्षा अलर्ट",
+    layer_signals: "📡 लाइव सिग्नल",
+    layer_valuation: "💎 उचित मूल्य गाइड",
   },
 
   es: {
@@ -1467,14 +1743,127 @@ const I18N_DICTIONARY = {
     btn_accept_offer: "Aceptar Oferta y Pago en Custodia →",
     escrow_notice:
       "Tu pago está protegido de forma segura hasta que apruebes la tarea terminada.",
+    // === screens-07-ride: inDrive-style counter-offer flow ===
+    reqflow_step1_title: "¿Qué servicio necesitas?",
+    reqflow_step1_sub: "Elige entre las 18 categorías más populares. Recibe contraofertas de múltiples trabajadores simultáneamente, estilo inDrive.",
+    reqflow_step2_sub: "Ingresa los detalles de la tarea y tu precio deseado. Los workers enviarán contraofertas.",
+    reqflow_step3_title: "Recibiendo contraofertas de workers",
+    reqflow_step3_sub: "Enviada solicitud de matching en tiempo real a workers en radio de 3km",
+    reqflow_btn_request_quote: "Solicitar (matchear workers)",
+    reqflow_btn_back_categories: "← Volver a categorías",
+    reqflow_btn_edit_request: "← Editar solicitud",
+    reqflow_offers_count_0: "0 ofertas recibidas",
+    reqflow_when_today: "Hoy, inmediato",
+    reqflow_when_tomorrow: "Mañana",
+    reqflow_when_this_week: "Esta semana",
+    reqflow_when_negotiable: "Negociable con worker",
+    reqflow_label_title: "Título de la tarea",
+    reqflow_label_desc: "Descripción detallada",
+    reqflow_label_location: "Ubicación",
+    reqflow_label_when: "Hora preferida",
+    reqflow_label_my_offer: "Mi oferta",
+    reqflow_label_suggested: "Precio sugerido por el sistema",
+    reqflow_form_task: "Información de la tarea",
+    reqflow_form_offer: "Mi oferta (estilo inDrive)",
+    reqflow_form_offer_sub: "inDrive te permite proponer libremente un precio. Proponer por debajo del precio sugerido aumenta el matching.",
+    ph_task_title: "ej. Mudanza Nonhyeon-dong camión 1-ton",
+    ph_task_desc: "Describe alcance, herramientas necesarias, notas especiales",
+    ph_task_location: "ej. 152 Teheran-ro, Gangnam-gu, Seúl",
+    mygigs_title: "Mis Trabajos",
+    mygigs_sub: "Consulta tus solicitudes publicadas y su estado de emparejamiento.",
+    mygigs_summary_total: "Total",
+    mygigs_summary_open: "Pendiente",
+    mygigs_summary_matched: "Asignado",
+    mygigs_summary_spent: "Por pagar",
+    filter_all: "Todos",
+    filter_open: "Pendiente",
+    filter_matched: "Asignado",
+    filter_done: "Hecho",
+    mygigs_empty_title: "Sin trabajos aún",
+    mygigs_empty_sub: "Publica una solicitud y los profesionales empezarán a enviar ofertas.",
+    mygigs_empty_cta: "+ Publicar mi primer trabajo",
+    layer_demand: "🔥 Mapa de demanda",
+    layer_risk: "⚠️ Alertas de seguridad",
+    layer_signals: "📡 Señales en vivo",
+    layer_valuation: "💎 Guía de precio justo",
   },
 };
+
+/**
+ * Auto-detect the visitor's preferred language from navigator.languages,
+ * with localStorage preference taking priority (so manual selections stick).
+ *
+ * Resolution order (per i18n best practice §4 of the implementation guide):
+ *   1. localStorage["golive_lang"]  — user's explicit prior choice
+ *   2. navigator.languages[0]      — browser Accept-Language equivalent
+ *   3. "ko"                         — safe default for golive.wiki's primary market
+ */
+const SUPPORTED_LANGS = ["ko", "en", "vi", "ja", "zh", "hi", "es"];
+const DEFAULT_LANG = "ko";
+
+function readSavedLang() {
+  try { return localStorage.getItem("golive_lang"); } catch (_) { return null; }
+}
+
+function detectBrowserLang() {
+  const langs = (typeof navigator !== "undefined")
+    ? (navigator.languages && navigator.languages.length
+        ? navigator.languages
+        : [navigator.language || navigator.userLanguage || ""])
+    : [];
+  for (const raw of langs) {
+    const short = String(raw).toLowerCase().split("-")[0];
+    if (SUPPORTED_LANGS.includes(short)) return short;
+  }
+  return DEFAULT_LANG;
+}
+
+function resolveInitialLang() {
+  // 1) explicit ?lang=xx in URL wins (lets links force a specific language)
+  try {
+    var urlLang = null;
+    try { urlLang = new URL(location.href).searchParams.get("lang"); } catch (_) {}
+    if (urlLang && SUPPORTED_LANGS.indexOf(urlLang) !== -1) return urlLang;
+  } catch (_) { /* ignore */ }
+  // 2) saved preference (set by switchLanguage / applyLanguage)
+  const saved = readSavedLang();
+  if (saved) return saved;
+  // 3) detected from navigator.language / navigator.languages
+  const detected = detectBrowserLang();
+  if (detected) return detected;
+  // 4) dictionary fallback
+  return DEFAULT_LANG;
+}
+
+/** Sync <html lang="..."> attribute so assistive tech / search engines
+    see the right language immediately. */
+function syncHtmlLang(lang) {
+  const root = document.documentElement;
+  if (!root) return;
+  try {
+    root.setAttribute("lang", lang);
+    root.setAttribute("data-lang", lang);
+  } catch (_) { /* ignore */ }
+}
+
+// Expose helpers for other modules (services-app.js) and tests.
+if (typeof window !== "undefined") {
+  window.__i18n__ = {
+    SUPPORTED_LANGS,
+    DEFAULT_LANG,
+    detectBrowserLang,
+    resolveInitialLang,
+    readSavedLang,
+    syncHtmlLang,
+  };
+}
 
 /**
  * Global Language Switcher Setup
  */
 function initLanguageSwitcher() {
-  const currentLang = localStorage.getItem("golive_lang") || "ko";
+  const currentLang = resolveInitialLang();
+  try { syncHtmlLang(currentLang); } catch (_) { /* ignore */ }
 
   // Inject CSS for Language Bar
   const style = document.createElement("style");
@@ -1629,6 +2018,9 @@ window.switchLanguage = function(lang) {
  */
 function applyLanguage(lang) {
   localStorage.setItem("golive_lang", lang);
+  try { syncHtmlLang(lang); } catch (_) {}
+  try { document.cookie = "golive_lang=" + lang + "; path=/; max-age=31536000; SameSite=Lax"; } catch (_) {}
+  try { window.dispatchEvent(new CustomEvent("golivewiki:langchange", { detail: { lang } })); } catch (_) { /* ignore */ }
 
   // If in direct 7 languages
   if (I18N_DICTIONARY[lang]) {

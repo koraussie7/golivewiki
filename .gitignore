@@ -38,3 +38,16 @@ terraform.rc
 tfplan.bin
 package-lock.json
 node_modules/
+
+# Build output
+dist/
+.vite/
+
+# Backup snapshots (local only)
+*.bak
+*.bak-*
+*.orig
+
+# DB / dumps
+*.sqlite
+*.db

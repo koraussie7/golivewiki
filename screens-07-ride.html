@@ -1,329 +1,40 @@
 <!doctype html>
 <html lang="ko">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>golive.wiki — 라이드 호출 (요금 제시 & 기사 매칭)</title>
-    <link rel="stylesheet" href="./styles/tokens.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <script src="./styles/i18n.js" defer></script>
-    <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
-      body {
-        background: var(--at-dark);
-        color: var(--at-text-main);
-        font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-        height: 100vh;
-        overflow: hidden;
-      }
-      .app-layout {
-        display: grid;
-        grid-template-rows: 64px 1fr;
-        height: 100vh;
-      }
-      .topbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 24px;
-        background: rgba(9,9,11,0.95);
-        border-bottom: 1px solid var(--at-border);
-        gap: 16px;
-        z-index: 1000;
-      }
-      .logo {
-        font-weight: 800;
-        font-size: 20px;
-        color: #fff;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .logo span { color: var(--at-primary); }
-      .topbar-actions {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-      }
-      .btn-back {
-        background: #141418;
-        border: 1px solid var(--at-border);
-        color: #fff;
-        padding: 8px 16px;
-        border-radius: 999px;
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 600;
-      }
-      #ride-map { height: 60%; width: 100%; }
-      .ride-card {
-        height: 40%;
-        background: #0E0E11;
-        border-top: 1px solid var(--at-border);
-        padding: 24px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .ride-step { display: flex; flex-direction: column; gap: 8px; }
-      .ride-step-label {
-        font-size: 12px; color: var(--at-text-muted); font-weight: 600;
-        text-transform: uppercase; letter-spacing: 0.05em;
-      }
-      .ride-input {
-        background: #141418; border: 1px solid var(--at-border);
-        border-radius: 10px; padding: 12px 14px; color: #fff;
-        font-size: 14px; outline: none;
-      }
-      .ride-input:focus { border-color: var(--at-primary); }
-      .fare-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
-      .fare-slider { flex: 1; accent-color: var(--at-primary); }
-      .fare-value {
-        font-family: 'JetBrains Mono', monospace; font-weight: 700;
-        color: var(--at-primary); min-width: 70px; text-align: right;
-      }
-      .btn-request {
-        background: var(--at-primary); color: #09090B; font-weight: 700;
-        padding: 12px 0; border-radius: 999px; text-align: center;
-        font-size: 15px; border: none; cursor: pointer;
-      }
-      .btn-request:disabled { opacity: 0.5; cursor: not-allowed; }
-      .status-pill {
-        display: inline-flex; align-items: center; gap: 8px;
-        padding: 6px 12px; border-radius: 999px; font-size: 12px;
-        font-weight: 700; border: 1px solid var(--at-border);
-      }
-      .status-searching { color: var(--at-gold); border-color: var(--at-gold); background: rgba(245,158,11,0.1); }
-      .status-accepted { color: var(--at-blue); border-color: var(--at-blue); background: rgba(10,101,252,0.1); }
-      .status-on-trip { color: var(--at-primary); border-color: var(--at-primary); background: rgba(20,235,192,0.1); }
-      .status-completed { color: var(--at-success); border-color: var(--at-success); background: rgba(16,185,129,0.1); }
-      .driver-card {
-        background: #141418; border: 1px solid var(--at-border);
-        border-radius: 12px; padding: 16px; display: flex;
-        align-items: center; gap: 12px;
-      }
-      .driver-av {
-        width: 40px; height: 40px; border-radius: 50%;
-        background: var(--at-primary); color: #09090B;
-        display: flex; align-items: center; justify-content: center;
-        font-weight: 800; font-family: 'JetBrains Mono', monospace;
-      }
-      .driver-info { flex: 1; }
-      .driver-name { font-weight: 700; color: #fff; }
-      .driver-meta { font-size: 12px; color: var(--at-text-muted); }
-      .eta-chip {
-        background: rgba(20,235,192,0.1); color: var(--at-primary);
-        padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
-      }
-      .hidden { display: none !important; }
-    </style>
-  </head>
-  <body>
-    <div class="app-layout">
-      <header class="topbar">
-        <a href="./index.html" class="logo">
-          go<span style="color: var(--at-primary)">live</span>.wiki
-        </a>
-        <div class="topbar-actions">
-          <!-- Universal Language Switcher -->
-          <div class="lang-switcher-wrap">
-            <button class="lang-btn" onclick="toggleLangDropdown()">
-              <span id="current-lang-label">🇰🇷 KO</span>
-              <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-            </button>
-            <div class="lang-dropdown" id="lang-dropdown">
-              <div style="font-size:11px; font-weight:700; color:var(--at-muted); padding:4px 8px; text-transform:uppercase;">Direct Native</div>
-              <div class="lang-opt" onclick="switchLanguage('ko')"><span>🇰🇷 한국어</span><span class="badge">KO</span></div>
-              <div class="lang-opt" onclick="switchLanguage('en')"><span>🇺🇸 English</span><span class="badge">EN</span></div>
-              <div class="lang-opt" onclick="switchLanguage('vi')"><span>🇻🇳 Tiếng Việt</span><span class="badge">VI</span></div>
-              <div class="lang-opt" onclick="switchLanguage('ja')"><span>🇯🇵 日本語</span><span class="badge">JA</span></div>
-              <div class="lang-opt" onclick="switchLanguage('zh')"><span>🇨🇳 中文</span><span class="badge">ZH</span></div>
-              <div class="lang-opt" onclick="switchLanguage('hi')"><span>🇮🇳 हिन्दी</span><span class="badge">HI</span></div>
-              <div class="lang-opt" onclick="switchLanguage('es')"><span>🇪🇸 Español</span><span class="badge">ES</span></div>
-              <div class="lang-divider"></div>
-              <div style="font-size:11px; font-weight:700; color:var(--at-muted); padding:4px 8px; text-transform:uppercase;">Google Translate</div>
-              <div class="lang-opt" onclick="switchLanguage('google_more')"><span>🌐 More Languages...</span></div>
-            </div>
-          </div>
-          <a href="./index.html" class="btn-back" data-i18n="nav_home">&larr; 메인으로</a>
-        </div>
-      </header>
-
-      <div id="ride-map"></div>
-
-      <div class="ride-card">
-        <div class="ride-step" id="step-search">
-          <div class="ride-step-label" data-i18n="ride_step1">1단계: 경로 입력</div>
-          <input type="text" class="ride-input" id="pickup-input" data-i18n-ph="ph_pickup" placeholder="출발지" />
-          <input type="text" class="ride-input" id="dest-input" data-i18n-ph="ph_dest" placeholder="도착지" />
-          <div class="fare-row">
-            <span data-i18n="fare_offer_label">내가 제시하는 요금</span>
-            <input type="range" class="fare-slider" id="fare-slider" min="3000" max="50000" step="500" value="12000" />
-            <strong class="fare-value" id="fare-value">₩12,000</strong>
-          </div>
-          <button class="btn-request" id="btn-request" data-i18n="btn_request_ride">기사 제안 받기 →</button>
-        </div>
-
-        <div class="ride-step hidden" id="step-matching">
-          <div class="ride-step-label" data-i18n="ride_step2">2단계: 기사 매칭 중</div>
-          <div class="status-pill status-searching" id="ride-status">
-            <span data-i18n="ride_searching">기사 검색 중...</span>
-          </div>
-          <p style="font-size:13px; color:var(--at-text-muted); margin-top:8px;" data-i18n="ride_matching_desc">
-            주변 기사들에게 귀하의 요금 제의를 전송하고 있습니다.
-          </p>
-        </div>
-
-        <div class="ride-step hidden" id="step-accepted">
-          <div class="ride-step-label" data-i18n="ride_step3">3단계: 기사 배정 완료</div>
-          <div class="status-pill status-accepted" id="ride-status-accepted">
-            <span data-i18n="ride_accepted">기사님이 수락하셨습니다</span>
-          </div>
-          <div class="driver-card">
-            <div class="driver-av" id="driver-av">D</div>
-            <div class="driver-info">
-              <div class="driver-name" id="driver-name">기사님</div>
-              <div class="driver-meta" id="driver-meta">도착 예정 계산 중…</div>
-            </div>
-            <div class="eta-chip" id="eta-chip">–</div>
-          </div>
-        </div>
-
-        <div class="ride-step hidden" id="step-ontrip">
-          <div class="ride-step-label" data-i18n="ride_step4">주행 중</div>
-          <div class="status-pill status-on-trip" id="ride-status-ontrip">
-            <span data-i18n="ride_on_trip">기사님이 이동 중입니다</span>
-          </div>
-          <p style="font-size:13px; color:var(--at-text-muted); margin-top:8px;" data-i18n="ride_ontrip_desc">
-            지도를 통해 실시간 위치를 확인할 수 있습니다.
-          </p>
-        </div>
-
-        <div class="ride-step hidden" id="step-completed">
-          <div class="ride-step-label" data-i18n="ride_step5">완료</div>
-          <div class="status-pill status-completed" id="ride-status-completed">
-            <span data-i18n="ride_completed">완료 — 평가 부탁드려요</span>
-          </div>
-          <p style="font-size:13px; color:var(--at-text-muted); margin-top:8px;" data-i18n="ride_done_desc">
-            안전하게 목적지에 도착하셨습니다. 기사님을 평가해 주세요.
-          </p>
-        </div>
-      </div>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script type="module">
-      import { estimateFare, requestRide, acceptRide } from './js/rideflow.js';
-      import { subscribeRideEvents } from './js/realtime.js';
-
-      const map = L.map('ride-map', { zoomControl: false }).setView([37.505, 127.035], 14);
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 19,
-      }).addTo(map);
-
-      let pickupMarker, destMarker;
-      const pickupInput = document.getElementById('pickup-input');
-      const destInput = document.getElementById('dest-input');
-      const fareSlider = document.getElementById('fare-slider');
-      const fareValue = document.getElementById('fare-value');
-      const btnRequest = document.getElementById('btn-request');
-
-      fareSlider.addEventListener('input', () => {
-        fareValue.textContent = '₩' + parseInt(fareSlider.value).toLocaleString();
-      });
-
-      function setMarker(latLng, isPickup) {
-        if (isPickup) {
-          if (pickupMarker) pickupMarker.setLatLng(latLng);
-          else { pickupMarker = L.marker(latLng).addTo(map); }
-        } else {
-          if (destMarker) destMarker.setLatLng(latLng);
-          else { destMarker = L.marker(latLng).addTo(map); }
-        }
-        map.flyTo(latLng, 15);
-      }
-
-      map.on('click', (e) => {
-        const lat = e.latlng.lat.toFixed(4);
-        const lng = e.latlng.lng.toFixed(4);
-        if (!pickupInput.value) {
-          pickupInput.value = lat + ', ' + lng;
-          setMarker(e.latlng, true);
-        } else if (!destInput.value) {
-          destInput.value = lat + ', ' + lng;
-          setMarker(e.latlng, false);
-        }
-      });
-
-      btnRequest.addEventListener('click', async () => {
-        if (!pickupInput.value || !destInput.value) {
-          alert('출발지와 도착지를 입력하거나 지도에서 선택해 주세요.');
-          return;
-        }
-        btnRequest.disabled = true;
-        btnRequest.textContent = '요청 전송 중…';
-
-        try {
-          const payload = {
-            pickup: pickupInput.value,
-            dest: destInput.value,
-            fare_offer_krw: parseInt(fareSlider.value),
-            requested_at: new Date().toISOString(),
-          };
-          const ride = await requestRide(payload);
-
-          document.getElementById('step-search').classList.add('hidden');
-          document.getElementById('step-matching').classList.remove('hidden');
-
-          subscribeRideEvents((rideData, eventType) => {
-            if (rideData.status === 'accepted') {
-              document.getElementById('step-matching').classList.add('hidden');
-              document.getElementById('step-accepted').classList.remove('hidden');
-              document.getElementById('driver-name').textContent = '배정된 기사님';
-            } else if (rideData.status === 'on_trip') {
-              document.getElementById('step-accepted').classList.add('hidden');
-              document.getElementById('step-ontrip').classList.remove('hidden');
-            } else if (rideData.status === 'completed') {
-              document.getElementById('step-ontrip').classList.add('hidden');
-              document.getElementById('step-completed').classList.remove('hidden');
-            }
-          });
-        } catch (err) {
-          console.error(err);
-          alert('라이드 요청에 실패했습니다. 다시 시도해 주세요.');
-          btnRequest.disabled = false;
-          btnRequest.textContent = '기사 제안 받기 →';
-        }
-      });
-    </script>
-    <script>
-      // Language switcher functions (inline so they work even if i18n.js fails to load)
-      function switchLanguage(lang) {
-        if (typeof applyLanguage === 'function') {
-          applyLanguage(lang);
-        }
-        const d = document.getElementById('lang-dropdown');
-        if (d) d.classList.remove('show');
-      }
-      function toggleLangDropdown() {
-        const d = document.getElementById('lang-dropdown');
-        if (d) d.classList.toggle('show');
-      }
-      // Close dropdown on outside click
-      window.addEventListener('click', function(e) {
-        if (!e.target.closest('.lang-switcher-wrap')) {
-          const d = document.getElementById('lang-dropdown');
-          if (d) d.classList.remove('show');
-        }
-      });
-    </script>
-  </body>
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>golive.wiki — 서비스 호출 (인기 카테고리 + inDrive 협상)</title>
+<!--
+  Phase 3: This page is preserved as an alias for backwards compatibility with
+  older links (e.g. https://golive.wiki/screens-07-ride.html). It immediately
+  redirects to the unified dashboard with the requester drawer pre-opened.
+-->
+<meta http-equiv="refresh" content="0; url=https://golive.wiki/screens-04-dashboard.html?mode=request" />
+<link rel="canonical" href="https://golive.wiki/screens-04-dashboard.html?mode=request" />
+<style>
+  body {
+    background: #0a0a0c;
+    color: #fafafa;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+  .redirect-note { text-align: center; }
+  .redirect-note a { color: #14ebc0; }
+</style>
+</head>
+<body>
+<div class="redirect-note">
+  <p>대시보드로 이동 중…</p>
+  <p><a href="https://golive.wiki/screens-04-dashboard.html?mode=request">클릭하여 계속</a></p>
+</div>
+<script>
+  setTimeout(function () {
+    window.location.replace("https://golive.wiki/screens-04-dashboard.html?mode=request");
+  }, 100);
+</script>
+</body>
 </html>

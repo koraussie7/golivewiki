@@ -1,4 +1,7 @@
-/* golive.wiki Design Tokens — Airtasker/InDrive dark theme */
+/* golive.wiki Design Tokens — Airtasker/InDrive-inspired dark UI.
+   The map tiles use OSM DE (no API key, stable) with a subtle hue/saturation
+   filter so the dark map base shifts toward the inDrive pink/cream tones
+   that the rest of the UI references (markers, pins, accents). */
 :root {
   --at-primary: #14ebc0;
   --at-primary-hover: #0fd2ab;
@@ -14,5 +17,51 @@
   --at-gold: #f59e0b;
   --at-danger: #ef4444;
   --at-success: #10b981;
-  --at-ride-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  --at-ride-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  /* Map tiles — OSM DE base with subtle inDrive-style pink tint */
+  --map-tile-url: "https://tile.openstreetmap.de/{z}/{x}/{y}.png";
+  --map-tile-fallback: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+  /* Light inversion to lift map out of pure black on dark UI; keep hue toward inDrive pink/cream. */
+  --map-label-filter: brightness(1.05) contrast(0.92) hue-rotate(335deg) saturate(0.85);
+  --map-tile-opacity: 1;
 }
+
+/* ===== User-location pulse marker (Leaflet divIcon) ===== */
+.user-location-pulse .user-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #14ebc0;
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 4px rgba(20, 235, 192, 0.25), 0 0 14px rgba(20, 235, 192, 0.6);
+  animation: user-dot-pulse 2.2s ease-out infinite;
+}
+@keyframes user-dot-pulse {
+  0%   { box-shadow: 0 0 0 0   rgba(20, 235, 192, 0.55); }
+  70%  { box-shadow: 0 0 0 16px rgba(20, 235, 192, 0); }
+  100% { box-shadow: 0 0 0 0   rgba(20, 235, 192, 0); }
+}
+.leaflet-overlay-pane svg path.user-accuracy-circle,
+.user-accuracy-circle {
+  pointer-events: none;
+}
+
+/* ===== Locate-me button (topbar) ===== */
+.locate-me-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--at-text);
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s, border-color 0.15s;
+  margin-right: 4px;
+}
+.locate-me-btn:hover { background: rgba(20, 235, 192, 0.10); border-color: rgba(20, 235, 192, 0.35); color: var(--at-accent); }
+.locate-me-btn:active { transform: scale(0.94); }
+.locate-me-btn.is-locating svg { animation: locate-spin 1s linear infinite; }
+@keyframes locate-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
