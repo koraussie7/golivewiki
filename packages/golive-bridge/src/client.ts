@@ -32,12 +32,12 @@ export class GoLiveClient {
     return this.request<GoLiveTask[]>(`/smartglass/tasks?${query}`);
   }
 
-  acceptTask(taskId: string, workerId: string) {
-    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/accept`, { method: "POST", body: JSON.stringify({ workerId }) });
+  acceptTask(taskId: string) {
+    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/accept`, { method: "POST", body: JSON.stringify({}) });
   }
 
-  startTask(taskId: string, actorId: string) {
-    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/start`, { method: "POST", body: JSON.stringify({ actorId }) });
+  startTask(taskId: string) {
+    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/start`, { method: "POST", body: JSON.stringify({}) });
   }
 
   listEvents(taskId: string) {
@@ -47,15 +47,15 @@ export class GoLiveClient {
     return this.request<{ id: string; createdAt: string }>(`/smartglass/tasks/${encodeURIComponent(taskId)}/events`, { method: "POST", body: JSON.stringify(event) });
   }
 
-  completeTask(taskId: string, actorId: string) {
-    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/complete`, { method: "POST", body: JSON.stringify({ actorId }) });
+  completeTask(taskId: string) {
+    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/complete`, { method: "POST", body: JSON.stringify({}) });
   }
 
-  setSharingConsent(taskId: string, enabled: boolean, actorId: string) {
-    return this.request<{ enabled: boolean }>(`/smartglass/tasks/${encodeURIComponent(taskId)}/consent`, { method: "POST", body: JSON.stringify({ enabled, actorId }) });
+  setSharingConsent(taskId: string, enabled: boolean) {
+    return this.request<{ enabled: boolean }>(`/smartglass/tasks/${encodeURIComponent(taskId)}/consent`, { method: "POST", body: JSON.stringify({ enabled }) });
   }
 
-  createVideoSession(taskId: string, actorId: string) {
-    return this.request<VideoSession>(`/smartglass/tasks/${encodeURIComponent(taskId)}/video-session`, { method: "POST", body: JSON.stringify({ actorId }) });
+  createVideoSession(taskId: string) {
+    return this.request<VideoSession>(`/smartglass/tasks/${encodeURIComponent(taskId)}/video-session`, { method: "POST", body: JSON.stringify({}) });
   }
 }
