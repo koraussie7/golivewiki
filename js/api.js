@@ -9,7 +9,9 @@ const headers = {
 };
 
 export async function getTasks(category = null) {
-  let url = `${SUPABASE_URL}/rest/v1/tasks?select=*&order=created_at.desc`;
+  // Only surface live requests. Without a status filter the list also shows
+  // archived/QA rows created during testing and during the RLS rollout.
+  let url = `${SUPABASE_URL}/rest/v1/tasks?select=*&order=created_at.desc&status=eq.open`;
   if (category) url += `&category=eq.${category}`;
   const r = await fetch(url, { headers });
   if (!r.ok) throw new Error(`GET tasks failed: ${r.status}`);
