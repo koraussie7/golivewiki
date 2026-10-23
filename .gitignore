@@ -38,3 +38,10 @@ terraform.rc
 tfplan.bin
 package-lock.json
 node_modules/
+
+# Build output
+dist/
+
+# Local backups made before edits (*.bak, *.bak-20261022)
+*.bak
+*.bak-*
