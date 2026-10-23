@@ -1,0 +1,13 @@
+{
+  "name": "golive-smartglass",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:server": "pnpm --filter @golive/task-api dev",
+    "dev:requester": "pnpm --filter @golive/requester-web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

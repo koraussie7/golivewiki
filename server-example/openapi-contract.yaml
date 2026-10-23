@@ -1,0 +1,66 @@
+openapi: 3.0.3
+info:
+  title: GoLive Smart Glass Task API
+  version: 0.1.0
+paths:
+  /smartglass/tasks:
+    get:
+      summary: List open tasks available to authenticated workers
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [open] }
+        - in: query
+          name: category
+          schema: { type: string, enum: [translation, inspection, shopping, delivery, other] }
+      responses:
+        '200': { description: Task list }
+  /smartglass/tasks/{taskId}/accept:
+    post:
+      summary: Accept a task as the signed-in worker
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: Task accepted }
+        '409': { description: Task already accepted or closed }
+  /smartglass/tasks/{taskId}/start:
+    post:
+      summary: Start an accepted task
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Task started }
+  /smartglass/tasks/{taskId}/events:
+    post:
+      summary: Send a task update
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: Event created }
+  /smartglass/tasks/{taskId}/complete:
+    post:
+      summary: Mark task complete
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Task completed }
+  /smartglass/tasks/{taskId}/consent:
+    post:
+      summary: Set explicit wearer consent for live sharing
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Consent state updated }
+  /smartglass/tasks/{taskId}/video-session:
+    post:
+      summary: Create a short-lived, task-scoped video session after consent
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: Session created }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
