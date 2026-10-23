@@ -1,17 +1,30 @@
 {
-  "name": "golivewiki",
-  "version": "1.0.0",
+  "name": "golive-wiki-web",
+  "version": "0.7.0",
   "private": true,
+  "description": "golive.wiki web client — multi-category gig marketplace + i18n (7 languages)",
   "type": "module",
-  "description": "golive.wiki - Airtasker-inspired gig marketplace (multilingual UI)",
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/postbuild.mjs",
-    "preview": "vite preview --port 4173",
-    "validate": "node scripts/validate-i18n.mjs"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "validate:i18n": "node scripts/validate-i18n.mjs",
+    "verify:i18n": "node verify-i18n.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
-    "vite": "^5.4.10",
-    "terser": "^5.36.0"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^30.1.3",
+    "terser": "^5.36.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.10"
   }
 }

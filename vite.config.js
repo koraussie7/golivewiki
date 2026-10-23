@@ -1,10 +1,11 @@
 import { resolve } from "node:path";
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 /**
  * golive.wiki Vite Multi-Page Application config
  *
- * Static HTML pages + shared styles/i18n.js. No framework.
+ * Static HTML pages + shared styles/i18n.js, with React for the drone-control entry.
  * Vite handles:
  *  - Asset hashing for cache busting (i18n-[hash].js)
  *  - Minification via Terser
@@ -12,6 +13,7 @@ import { defineConfig } from "vite";
  *  - Relative path rewriting for styles/i18n.js
  */
 export default defineConfig({
+  plugins: [react()],
   base: "./",
   root: ".",
   build: {
@@ -26,7 +28,26 @@ export default defineConfig({
         passes: 2,
         pure_funcs: ["console.debug"],
       },
-      mangle: { reserved: ["I18N_DICTIONARY", "applyLanguage", "switchLanguage"] },
+      mangle: {
+        reserved: [
+          "I18N_DICTIONARY",
+          "applyLanguage",
+          "switchLanguage",
+          "toggleLangDropdown",
+          "initLanguageSwitcher",
+          "AGENT_DEFS",
+          "PLAN_TEMPLATES",
+          "pickPlanType",
+          "agentShowPlan",
+          "agentSuggest",
+          "agentSubmit",
+          "agentApprove",
+          "agentCancel",
+          "initAgentPanel",
+          "_agentBusy",
+          "CATEGORIES",
+        ],
+      },
       format: { comments: false },
     },
     rollupOptions: {
@@ -37,6 +58,7 @@ export default defineConfig({
         "screens-06-task-detail": resolve(__dirname, "screens-06-task-detail.html"),
         "screens-admin": resolve(__dirname, "screens-admin.html"),
         "screens-07-ride": resolve(__dirname, "screens-07-ride.html"),
+        drone: resolve(__dirname, "drone.html"),
       },
       output: {
         entryFileNames: "assets/[name]-[hash].js",
