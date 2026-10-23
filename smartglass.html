@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>스마트글래스 — golive.wiki</title>
+<meta name="description" content="Rokid AR 글래스로 현장 업무를 안내하는 스마트글래스 컴패니언. 준비 중입니다." />
+<style>
+  :root { --primary:#14EBC0; --dark:#09090B; --border:#27272A; --muted:#9CA3AF; --card:#131316; }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; min-height:100vh; background:var(--dark); color:#E5E7EB;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans KR",sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:32px;
+  }
+  .wrap { max-width:640px; width:100%; }
+  .badge {
+    display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700;
+    padding:5px 12px; border-radius:999px; margin-bottom:20px;
+    color:#F59E0B; background:rgba(245,158,11,.12); border:1px solid rgba(245,158,11,.35);
+  }
+  h1 { font-size:30px; line-height:1.25; margin:0 0 12px; color:#fff; letter-spacing:-.02em; }
+  p.lede { color:var(--muted); font-size:15px; line-height:1.7; margin:0 0 28px; }
+  .card {
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:22px; margin-bottom:14px;
+  }
+  .card h2 { font-size:14px; margin:0 0 6px; color:#fff; font-weight:700; }
+  .card p { margin:0; font-size:13.5px; color:var(--muted); line-height:1.6; }
+  ul { margin:14px 0 0; padding-left:18px; color:var(--muted); font-size:13.5px; line-height:1.9; }
+  .note {
+    font-size:12.5px; color:var(--muted); border-left:2px solid var(--border);
+    padding-left:12px; margin:24px 0;
+  }
+  a.back {
+    display:inline-flex; align-items:center; gap:6px; font-size:14px; font-weight:600;
+    color:var(--primary); text-decoration:none; padding:10px 18px;
+    border:1px solid rgba(20,235,192,.3); border-radius:999px;
+  }
+  a.back:hover { background:rgba(20,235,192,.08); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="badge">⚠ 개발 중 · 준비 중</div>
+
+    <h1>🥽 스마트글래스</h1>
+    <p class="lede">
+      Rokid AR 글래스를 golive.wiki 현장 업무에 연결하는 컴패니언 앱입니다.
+      음성 안내, 현장 사진 확인, 메쉬 지식 공유를 목표로 개발 중입니다.
+    </p>
+
+    <div class="card">
+      <h2>무엇을 준비하고 있나요</h2>
+      <ul>
+        <li>글래스에서 음성으로 일감 확인 · 수락</li>
+        <li>현장 사진을 찍어 의뢰인과 공유</li>
+        <li>다른 작업자가 남긴 현장 지식 검색</li>
+        <li>온디바이스 안전 판정 (보행 · 장애물)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>지금 상태</h2>
+      <p>
+        서버 API와 기기 인증이 아직 연결되지 않았습니다.
+        시범 운영 전까지는 이 페이지에서 진행 상황만 안내합니다.
+      </p>
+    </div>
+
+    <p class="note">
+      안전 판정(신호등 · 횡단보도 · 장애물)은 설계상 <strong>기 안에서</strong> 처리합니다.
+      네트워크 지연이 생명과 직결되는 판단을 늦춰서는 안 되기 때문입니다.
+      서버는 그 요청을 받지 않습니다.
+    </p>
+
+    <a class="back" href="./">← golive.wiki 로 돌아가기</a>
+  </div>
+</body>
+</html>
