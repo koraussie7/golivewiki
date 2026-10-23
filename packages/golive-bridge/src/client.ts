@@ -1,4 +1,4 @@
-import type { GoLiveTask, TaskEventInput, VideoSession, TaskCategory } from "./types";
+import type { GoLiveTask, TaskEvent, TaskEventInput, VideoSession, TaskCategory } from "./types";
 
 export interface GoLiveClientOptions {
   baseUrl: string;
@@ -32,20 +32,23 @@ export class GoLiveClient {
     return this.request<GoLiveTask[]>(`/smartglass/tasks?${query}`);
   }
 
-  acceptTask(taskId: string) {
-    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/accept`, { method: "POST", body: JSON.stringify({}) });
+  acceptTask(taskId: string, workerId: string) {
+    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/accept`, { method: "POST", body: JSON.stringify({ workerId }) });
   }
 
-  startTask(taskId: string) {
-    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/start`, { method: "POST", body: JSON.stringify({}) });
+  startTask(taskId: string, actorId: string) {
+    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/start`, { method: "POST", body: JSON.stringify({ actorId }) });
   }
 
+  listEvents(taskId: string) {
+    return this.request<TaskEvent[]>(`/smartglass/tasks/${encodeURIComponent(taskId)}/events`);
+  }
   addEvent(taskId: string, event: TaskEventInput) {
     return this.request<{ id: string; createdAt: string }>(`/smartglass/tasks/${encodeURIComponent(taskId)}/events`, { method: "POST", body: JSON.stringify(event) });
   }
 
-  completeTask(taskId: string) {
-    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/complete`, { method: "POST", body: JSON.stringify({}) });
+  completeTask(taskId: string, actorId: string) {
+    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/complete`, { method: "POST", body: JSON.stringify({ actorId }) });
   }
 
   setSharingConsent(taskId: string, enabled: boolean) {

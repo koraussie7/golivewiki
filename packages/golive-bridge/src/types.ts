@@ -20,3 +20,12 @@ export interface VideoSession {
   playbackUrl: string;
   expiresAt: string;
 }
+
+export interface TaskEvent {
+  id: string;
+  taskId: string;
+  type: string;
+  actorId: string;
+  detail: string;
+  createdAt: string;
+}

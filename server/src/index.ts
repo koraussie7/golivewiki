@@ -48,12 +48,15 @@ function findTask(id: string) { return tasks.find(t => t.id === id); }
 // Demo health endpoint
 app.get("/api/health", (_req, res) => res.json({ ok: true, service: "golive-smartglass-task-api" }));
 
-app.get("/api/tasks", (req, res) => {
+function listTasks(req: express.Request, res: express.Response) {
   const status = req.query.status?.toString();
-  res.json(tasks.filter(t => !status || t.status === status));
-});
+  const category = req.query.category?.toString();
+  res.json(tasks.filter(t => (!status || t.status === status) && (!category || t.category === category)));
+}
+app.get("/smartglass/tasks", listTasks);
+app.get("/api/tasks", listTasks);
 
-app.post("/api/tasks", (req, res) => {
+function createTaskHandler(req: express.Request, res: express.Response) {
   const parsed = CreateTask.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "invalid_task", details: parsed.error.flatten() });
   const task: Task = {
@@ -62,15 +65,17 @@ app.post("/api/tasks", (req, res) => {
   tasks.unshift(task);
   addEvent(task.id, task.requesterId, "task.created", task.title);
   return res.status(201).json(task);
-});
+}
+app.post("/smartglass/tasks", createTaskHandler);
+app.post("/api/tasks", createTaskHandler);
 
-app.get("/api/tasks/:id", (req, res) => {
+app.get("/smartglass/tasks/:id", (req, res) => {
   const task = findTask(req.params.id);
   if (!task) return res.status(404).json({ error: "task_not_found" });
   return res.json(task);
 });
 
-app.post("/api/tasks/:id/accept", (req, res) => {
+app.post("/smartglass/tasks/:id/accept", (req, res) => {
   const task = findTask(req.params.id);
   if (!task) return res.status(404).json({ error: "task_not_found" });
   const workerId = z.string().min(1).max(100).safeParse(req.body?.workerId);
@@ -84,7 +89,7 @@ app.post("/api/tasks/:id/accept", (req, res) => {
   return res.json(task);
 });
 
-app.post("/api/tasks/:id/start", (req, res) => {
+app.post("/smartglass/tasks/:id/start", (req, res) => {
   const task = findTask(req.params.id);
   if (!task) return res.status(404).json({ error: "task_not_found" });
   const actorId = z.string().min(1).safeParse(req.body?.actorId);
@@ -95,7 +100,7 @@ app.post("/api/tasks/:id/start", (req, res) => {
   return res.json(task);
 });
 
-app.post("/api/tasks/:id/instructions", (req, res) => {
+app.post("/smartglass/tasks/:id/instructions", (req, res) => {
   const task = findTask(req.params.id);
   if (!task) return res.status(404).json({ error: "task_not_found" });
   if (!["accepted","in_progress"].includes(task.status)) return res.status(409).json({ error: "task_not_active" });
@@ -113,7 +118,7 @@ app.post("/api/tasks/:id/instructions", (req, res) => {
   return res.status(201).json(instruction);
 });
 
-app.get("/api/tasks/:id/instructions", (req, res) => {
+app.get("/smartglass/tasks/:id/instructions", (req, res) => {
   const task = findTask(req.params.id);
   if (!task) return res.status(404).json({ error: "task_not_found" });
   res.json(instructions.filter(i => i.taskId === task.id));
@@ -131,13 +136,27 @@ app.post("/api/instructions/:id/respond", (req, res) => {
   return res.json(instruction);
 });
 
-app.get("/api/tasks/:id/events", (req, res) => {
+const TaskEventInput = z.object({
+  type: z.enum(["worker_note", "snapshot_requested", "translation_result", "issue_reported"]),
+  message: z.string().min(1).max(1000)
+});
+app.post("/smartglass/tasks/:id/events", (req, res) => {
+  const task = findTask(req.params.id);
+  if (!task) return res.status(404).json({ error: "task_not_found" });
+  if (!["accepted", "in_progress"].includes(task.status)) return res.status(409).json({ error: "task_not_active" });
+  const parsed = TaskEventInput.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: "invalid_event", details: parsed.error.flatten() });
+  addEvent(task.id, task.workerId ?? "anonymous", `task.${parsed.data.type}`, parsed.data.message);
+  const created = events[0];
+  return res.status(201).json({ id: created.id, createdAt: created.createdAt });
+});
+app.get("/smartglass/tasks/:id/events", (req, res) => {
   const task = findTask(req.params.id);
   if (!task) return res.status(404).json({ error: "task_not_found" });
   res.json(events.filter(e => e.taskId === task.id).slice(0, 200));
 });
 
-app.post("/api/tasks/:id/complete", (req, res) => {
+app.post("/smartglass/tasks/:id/complete", (req, res) => {
   const task = findTask(req.params.id);
   if (!task) return res.status(404).json({ error: "task_not_found" });
   const actorId = z.string().min(1).safeParse(req.body?.actorId);

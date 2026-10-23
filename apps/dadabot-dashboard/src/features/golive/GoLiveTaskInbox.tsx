@@ -6,6 +6,8 @@ import "./golive.css";
 type Props = {
   getAccessToken: () => Promise<string | null>;
   apiBaseUrl?: string;
+  /** 인증된 워커 ID. 서버가 수락·시작·완료의 주체를 이 값으로 검증합니다. */
+  workerId: string;
 };
 
 const categories: { value: TaskCategory | ""; label: string }[] = [
@@ -17,7 +19,7 @@ const categories: { value: TaskCategory | ""; label: string }[] = [
   { value: "other", label: "기타" }
 ];
 
-export default function GoLiveTaskInbox({ getAccessToken, apiBaseUrl = import.meta.env.VITE_GOLIVE_API_BASE }: Props) {
+export default function GoLiveTaskInbox({ getAccessToken, apiBaseUrl = import.meta.env.VITE_GOLIVE_API_BASE, workerId }: Props) {
   const client = useMemo(() => new GoLiveClient({ baseUrl: apiBaseUrl, getAccessToken }), [apiBaseUrl, getAccessToken]);
   const [tasks, setTasks] = useState<GoLiveTask[]>([]);
   const [selected, setSelected] = useState<GoLiveTask | null>(null);
@@ -47,11 +49,11 @@ export default function GoLiveTaskInbox({ getAccessToken, apiBaseUrl = import.me
   }
 
   async function accept(task: GoLiveTask) {
-    await run(async () => { const updated = await client.acceptTask(task.id); setSelected(updated); }, "의뢰를 수락했습니다.");
+    await run(async () => { const updated = await client.acceptTask(task.id, workerId); setSelected(updated); }, "의뢰를 수락했습니다.");
   }
   async function start() {
     if (!selected) return;
-    await run(async () => { const updated = await client.startTask(selected.id); setSelected(updated); }, "작업을 시작했습니다.");
+    await run(async () => { const updated = await client.startTask(selected.id, workerId); setSelected(updated); }, "작업을 시작했습니다.");
   }
   async function sendNote() {
     if (!selected || !note.trim()) return;
@@ -83,7 +85,7 @@ export default function GoLiveTaskInbox({ getAccessToken, apiBaseUrl = import.me
     if (!selected) return;
     await run(async () => {
       if (sharingConsent) await client.setSharingConsent(selected.id, false);
-      const updated = await client.completeTask(selected.id);
+      const updated = await client.completeTask(selected.id, workerId);
       setSelected(updated); setSharingConsent(false); setVideoSession(null);
     }, "작업을 완료했습니다.");
   }
