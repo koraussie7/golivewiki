@@ -104,8 +104,8 @@ export default function GoLiveTaskInbox({ getAccessToken, apiBaseUrl = import.me
         </label>
         <div className="gg-task-list">
           {tasks.map(task => <button className={`gg-task ${selected?.id === task.id ? "is-selected" : ""}`} key={task.id} onClick={() => { setSelected(task); setVideoSession(null); setSharingConsent(false); }}>
-            <strong>{task.title}</strong><span>{task.locationLabel || "위치 미지정"} · {task.category}</span>
-            <p>{task.description}</p><small>{task.budget ?? 0} {task.currency}</small>
+            <strong>{task.title}</strong><span>{task.category}</span>
+            <p>{task.description}</p><small>{task.budget} {task.currency}</small>
             <span className="gg-link">작업 상세 보기 →</span>
           </button>)}
           {tasks.length === 0 && <p className="gg-muted">현재 공개된 의뢰가 없습니다.</p>}
@@ -114,7 +114,7 @@ export default function GoLiveTaskInbox({ getAccessToken, apiBaseUrl = import.me
       <main className="gg-panel">
         {!selected ? <div className="gg-empty"><span>⌕</span><h2>작업을 선택하세요</h2><p>의뢰 내용을 확인한 뒤 수락할 수 있습니다.</p></div> :
         <>
-          <div className="gg-task-heading"><div><p className="gg-eyebrow">TASK DETAIL</p><h2>{selected.title}</h2><p>{selected.locationLabel || "위치 미지정"} · {selected.budget ?? 0} {selected.currency}</p></div><span className={`gg-status ${selected.status}`}>{selected.status}</span></div>
+          <div className="gg-task-heading"><div><p className="gg-eyebrow">TASK DETAIL</p><h2>{selected.title}</h2><p>{selected.budget ?? 0} {selected.currency}</p></div><span className={`gg-status ${selected.status}`}>{selected.status}</span></div>
           <p className="gg-description">{selected.description}</p>
           {selected.status === "open" && <button disabled={busy} onClick={() => void accept(selected)}>이 작업 수락</button>}
           {selected.status === "accepted" && <button disabled={busy} onClick={() => void start()}>작업 시작</button>}

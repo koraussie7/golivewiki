@@ -17,7 +17,7 @@ const streamBase = () => process.env.SMARTGLASS_STREAM_BASE?.trim() ?? "";
 const CreateTaskInput = z.object({
   title: z.string().trim().min(3).max(160),
   description: z.string().max(4000).default(""),
-  category: z.enum(["inspection", "delivery", "cleaning", "repair", "other"]),
+  category: z.enum(["translation", "inspection", "shopping", "delivery", "other"]),
   budget: z.number().int().nonnegative(),
   currency: z.string().length(3).default("KRW"),
 });

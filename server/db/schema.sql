@@ -7,7 +7,8 @@ create table if not exists smartglass_tasks (
   worker_id text,
   title text not null check (length(trim(title)) between 3 and 160),
   description text not null default '',
-  category text not null,
+  category text not null
+    check (category in ('translation','inspection','shopping','delivery','other')),
   budget integer not null check (budget >= 0),
   currency text not null default 'KRW',
   status text not null default 'open'

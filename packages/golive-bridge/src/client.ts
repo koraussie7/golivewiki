@@ -1,4 +1,4 @@
-import type { GoLiveTask, TaskEvent, TaskEventInput, VideoSession, TaskCategory } from "./types";
+import type { CreateTaskInput, GoLiveTask, TaskEvent, TaskEventInput, TaskStatus, VideoSession, TaskCategory } from "./types";
 
 export interface GoLiveClientOptions {
   baseUrl: string;
@@ -26,6 +26,19 @@ export class GoLiveClient {
     return response.json() as Promise<T>;
   }
 
+  listTasks(filter: { status?: TaskStatus; category?: TaskCategory } = {}) {
+    const query = new URLSearchParams();
+    if (filter.status) query.set("status", filter.status);
+    if (filter.category) query.set("category", filter.category);
+    const suffix = query.toString() ? `?${query}` : "";
+    return this.request<GoLiveTask[]>(`/smartglass/tasks${suffix}`);
+  }
+  getTask(taskId: string) {
+    return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}`);
+  }
+  createTask(input: CreateTaskInput) {
+    return this.request<GoLiveTask>("/smartglass/tasks", { method: "POST", body: JSON.stringify(input) });
+  }
   listOpenTasks(category?: TaskCategory) {
     const query = new URLSearchParams({ status: "open" });
     if (category) query.set("category", category);
