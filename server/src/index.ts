@@ -6,7 +6,37 @@ import { PostgresStore } from "./postgres-store.js";
 import { MemoryStore, type Store } from "./store.js";
 
 const app = express();
-app.use(cors());
+
+/**
+ * CORS is an allowlist, not a wildcard. Production sets CORS_ORIGINS to the exact app
+ * origins; localhost is only added outside production so a misconfigured deploy cannot
+ * silently accept arbitrary browser origins.
+ */
+const allowedOrigins = (process.env.CORS_ORIGINS ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+if (process.env.NODE_ENV !== "production") {
+  allowedOrigins.push("http://localhost:4310", "http://127.0.0.1:4310", "http://localhost:5173");
+}
+app.use(cors({
+  origin(origin, callback) {
+    // Same-origin and non-browser clients send no Origin header.
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // Deny without wrapping in an Error so the request is not turned into a 500.
+    return callback(null, false);
+  },
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["authorization", "content-type"],
+  maxAge: 600,
+}));
+// Explicit rejection: CORS headers alone would let a 401/200 body through to a script tag.
+app.use((req, res, next) => {
+  const origin = req.header("origin");
+  if (origin && !allowedOrigins.includes(origin)) return res.status(403).json({ error: "origin_not_allowed" });
+  return next();
+});
 app.use(express.json({ limit: "256kb" }));
 
 const store: Store = process.env.DATABASE_URL?.trim() ? new PostgresStore(process.env.DATABASE_URL.trim()) : new MemoryStore();

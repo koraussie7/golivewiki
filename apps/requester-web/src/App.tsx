@@ -6,14 +6,42 @@ const API_BASE = import.meta.env.VITE_GOLIVE_API_BASE ?? "http://127.0.0.1:4100"
 const TOKEN_KEY = "golive.dev.token";
 
 /**
- * Dev-only credential entry. In production the bearer token comes from the GoLive
- * Supabase session; identity is always resolved server-side from that token.
+ * Production reads the GoLive Supabase session (the same login golive.wiki already uses).
+ * The dev-only paste field is hidden when VITE_GOLIVE_USE_SUPABASE_SESSION is "true", so a
+ * deployed build cannot fall back to a hand-copied token.
  */
+const USE_SUPABASE_SESSION = import.meta.env.VITE_GOLIVE_USE_SUPABASE_SESSION === "true";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? "";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "";
+
 function useAccessToken() {
-  const [token, setToken] = useState<string | null>(() => sessionStorage.getItem(TOKEN_KEY));
+  const [token, setToken] = useState<string | null>(() => (USE_SUPABASE_SESSION ? null : sessionStorage.getItem(TOKEN_KEY)));
+  const [ready, setReady] = useState(!USE_SUPABASE_SESSION);
+
+  useEffect(() => {
+    if (!USE_SUPABASE_SESSION) return;
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) { setReady(true); return; }
+    let cancelled = false;
+    void import("@supabase/supabase-js").then(({ createClient }) => {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      void supabase.auth.getSession().then(({ data }) => {
+        if (!cancelled) { setToken(data.session?.access_token ?? null); setReady(true); }
+      });
+      const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!cancelled) setToken(session?.access_token ?? null);
+      });
+      return () => sub.subscription.unsubscribe();
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   const login = (value: string) => { sessionStorage.setItem(TOKEN_KEY, value); setToken(value); };
-  const logout = () => { sessionStorage.removeItem(TOKEN_KEY); setToken(null); };
-  return { token, login, logout };
+  const logout = () => {
+    if (USE_SUPABASE_SESSION) { void import("@supabase/supabase-js").then(({ createClient }) => createClient(SUPABASE_URL, SUPABASE_ANON_KEY).auth.signOut()); }
+    sessionStorage.removeItem(TOKEN_KEY);
+    setToken(null);
+  };
+  return { token, ready, login, logout };
 }
 
 const categories: { value: TaskCategory; label: string }[] = [
@@ -29,7 +57,7 @@ const statusLabel: Record<string, string> = {
 };
 
 export default function App() {
-  const { token, login, logout } = useAccessToken();
+  const { token, ready, login, logout } = useAccessToken();
   const client = useMemo(() => new GoLiveClient({ baseUrl: API_BASE, getAccessToken: async () => token }), [token]);
 
   const [tasks, setTasks] = useState<GoLiveTask[]>([]);
@@ -75,6 +103,10 @@ export default function App() {
     finally { setBusy(false); }
   }
 
+  if (!ready) {
+    return <main className="layout"><p className="muted">세션 확인 중…</p></main>;
+  }
+
   if (!token) {
     return (
       <main className="layout">
@@ -96,8 +128,14 @@ export default function App() {
             const value = new FormData(event.currentTarget).get("token");
             if (typeof value === "string" && value.trim()) login(value.trim());
           }}>
-            <label>액세스 토큰<textarea name="token" rows={4} required placeholder="eyJhbGciOi..." /></label>
-            <button type="submit">로그인</button>
+            {USE_SUPABASE_SESSION ? (
+              <p className="hint">GoLive에 로그인한 세션이 없습니다. 먼저 golive.wiki에서 로그인한 뒤 이 페이지로 돌아오세요.</p>
+            ) : (
+              <>
+                <label>액세스 토큰<textarea name="token" rows={4} required placeholder="eyJhbGciOi..." /></label>
+                <button type="submit">로그인</button>
+              </>
+            )}
           </form>
         </section>
       </main>
