@@ -69,22 +69,22 @@ export default function GoLiveTaskInbox({ getAccessToken, apiBaseUrl = import.me
       return;
     }
     await run(async () => {
-      await client.setSharingConsent(selected.id, true);
-      const session = await client.createVideoSession(selected.id);
+      await client.setSharingConsent(selected.id, true, workerId);
+      const session = await client.createVideoSession(selected.id, workerId);
       setVideoSession(session);
     }, "공유 세션을 만들었습니다. 지원되는 글라스 앱/SDK의 영상 출력을 연결하세요.");
   }
   async function stopSharing() {
     if (!selected) return;
     await run(async () => {
-      await client.setSharingConsent(selected.id, false);
+      await client.setSharingConsent(selected.id, false, workerId);
       setVideoSession(null);
     }, "공유 중지 요청을 전송했습니다.");
   }
   async function complete() {
     if (!selected) return;
     await run(async () => {
-      if (sharingConsent) await client.setSharingConsent(selected.id, false);
+      if (sharingConsent) await client.setSharingConsent(selected.id, false, workerId);
       const updated = await client.completeTask(selected.id, workerId);
       setSelected(updated); setSharingConsent(false); setVideoSession(null);
     }, "작업을 완료했습니다.");

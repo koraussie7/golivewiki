@@ -51,11 +51,11 @@ export class GoLiveClient {
     return this.request<GoLiveTask>(`/smartglass/tasks/${encodeURIComponent(taskId)}/complete`, { method: "POST", body: JSON.stringify({ actorId }) });
   }
 
-  setSharingConsent(taskId: string, enabled: boolean) {
-    return this.request<{ enabled: boolean }>(`/smartglass/tasks/${encodeURIComponent(taskId)}/consent`, { method: "POST", body: JSON.stringify({ enabled }) });
+  setSharingConsent(taskId: string, enabled: boolean, actorId: string) {
+    return this.request<{ enabled: boolean }>(`/smartglass/tasks/${encodeURIComponent(taskId)}/consent`, { method: "POST", body: JSON.stringify({ enabled, actorId }) });
   }
 
-  createVideoSession(taskId: string) {
-    return this.request<VideoSession>(`/smartglass/tasks/${encodeURIComponent(taskId)}/video-session`, { method: "POST", body: JSON.stringify({}) });
+  createVideoSession(taskId: string, actorId: string) {
+    return this.request<VideoSession>(`/smartglass/tasks/${encodeURIComponent(taskId)}/video-session`, { method: "POST", body: JSON.stringify({ actorId }) });
   }
 }

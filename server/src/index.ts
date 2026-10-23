@@ -167,5 +167,61 @@ app.post("/smartglass/tasks/:id/complete", (req, res) => {
   return res.json(task);
 });
 
+
+// ---- Live sharing: explicit wearer consent gates a short-lived, task-scoped session ----
+const consentStore = new Map<string, { enabled: boolean; updatedAt: string }>();
+const videoSessions = new Map<string, { sessionId: string; playbackUrl: string; expiresAt: string; taskId: string }>();
+const VIDEO_SESSION_TTL_MS = 10 * 60 * 1000;
+const PUBLIC_STREAM_BASE = process.env.SMARTGLASS_STREAM_BASE?.trim() ?? "";
+
+function isShareable(task: Task) {
+  return task.status === "accepted" || task.status === "in_progress";
+}
+
+app.post("/smartglass/tasks/:id/consent", (req, res) => {
+  const task = findTask(req.params.id);
+  if (!task) return res.status(404).json({ error: "task_not_found" });
+  const actorId = z.string().min(1).safeParse(req.body?.actorId);
+  if (!actorId.success || actorId.data !== task.workerId) return res.status(403).json({ error: "worker_only" });
+  if (!isShareable(task)) return res.status(409).json({ error: "task_not_active" });
+  const enabled = z.boolean().safeParse(req.body?.enabled);
+  if (!enabled.success) return res.status(400).json({ error: "invalid_consent" });
+
+  if (!enabled.data) {
+    // Revoking consent immediately invalidates any live sessions for this task.
+    for (const [key, session] of videoSessions) if (session.taskId === task.id) videoSessions.delete(key);
+  }
+  const state = { enabled: enabled.data, updatedAt: new Date().toISOString() };
+  consentStore.set(task.id, state);
+  addEvent(task.id, actorId.data, enabled.data ? "consent.granted" : "consent.revoked", "Wearer updated live sharing consent");
+  return res.json(state);
+});
+
+app.post("/smartglass/tasks/:id/video-session", (req, res) => {
+  const task = findTask(req.params.id);
+  if (!task) return res.status(404).json({ error: "task_not_found" });
+  const actorId = z.string().min(1).safeParse(req.body?.actorId);
+  if (!actorId.success || actorId.data !== task.workerId) return res.status(403).json({ error: "worker_only" });
+  if (!isShareable(task)) return res.status(409).json({ error: "task_not_active" });
+  if (consentStore.get(task.id)?.enabled !== true) return res.status(403).json({ error: "consent_required" });
+  if (!PUBLIC_STREAM_BASE) return res.status(503).json({ error: "stream_base_not_configured" });
+
+  const now = Date.now();
+  for (const [key, session] of videoSessions) if (new Date(session.expiresAt).getTime() <= now) videoSessions.delete(key);
+  const existing = [...videoSessions.values()].find(s => s.taskId === task.id);
+  if (existing) return res.status(201).json(existing);
+
+  const session = {
+    sessionId: randomUUID(),
+    playbackUrl: `${PUBLIC_STREAM_BASE.replace(/\/+$/, "")}/t/${task.id.slice(0, 8)}/${randomUUID()}?exp=${now + VIDEO_SESSION_TTL_MS}`,
+    expiresAt: new Date(now + VIDEO_SESSION_TTL_MS).toISOString(),
+    taskId: task.id
+  };
+  videoSessions.set(session.sessionId, session);
+  addEvent(task.id, actorId.data, "video.session.started", `expires ${session.expiresAt}`);
+  const { taskId: _taskId, ...body } = session;
+  return res.status(201).json(body);
+});
+
 const port = Number(process.env.PORT ?? 4100);
 app.listen(port, () => console.log(`GoLive Smart Glass API listening on http://localhost:${port}`));
