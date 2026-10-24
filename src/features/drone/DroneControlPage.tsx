@@ -13,7 +13,9 @@ import {
   createMission,
   getMission,
   getMissionEvents,
+  startMission,
   submitCameraCommand,
+  DroneApiError,
   type DroneLiveEvent,
   type DroneLiveState,
 } from "./api/drone-api";
@@ -695,32 +697,89 @@ export function DroneControlPage() {
                         {mission.requester}
                       </span>
                     </div>
-                    <div className="mission-progress">
-                      <div className="progress-label">
-                        <span>임무 진행 단계</span>
-                        <b>
-                          2 <small>/ 4</small>
-                        </b>
-                      </div>
-                      <div className="progress-track">
-                        <i />
-                      </div>
-                      <div className="progress-steps">
-                        <span className="done">의뢰 접수</span>
-                        <span className="current">현장 확인</span>
-                        <span>카메라 작업</span>
-                        <span>임무 완료</span>
-                      </div>
-                    </div>
+                    {(() => {
+                      // The previous markup hard-coded "2 / 4 · 현장 확인" for every
+                      // mission state, so a `completed` mission still showed step 2. Derive
+                      // the step from the real status instead.
+                      const steps = [
+                        { label: "의뢰 접수", short: "requested" },
+                        { label: "현장 확인", short: "accepted" },
+                        { label: "카메라 작업", short: "active" },
+                        { label: "임무 완료", short: "completed" },
+                      ];
+                      const index = Math.max(0, steps.findIndex((s) => s.short === mission.status));
+                      const current = index === -1 ? 0 : index;
+                      const pct = ((current + 1) / steps.length) * 100;
+                      return (
+                        <div className="mission-progress">
+                          <div className="progress-label">
+                            <span>임무 진행 단계</span>
+                            <b>
+                              {current + 1} <small>/ {steps.length}</small>
+                            </b>
+                          </div>
+                          <div className="progress-track" role="progressbar" aria-valuemin={1} aria-valuemax={steps.length} aria-valuenow={current + 1} aria-label={`임무 진행 단계 ${current + 1} / ${steps.length}`}>
+                            <i style={{ width: `${pct}%` }} />
+                          </div>
+                          <div className="progress-steps">
+                            {steps.map((step, i) => (
+                              <span
+                                key={step.short}
+                                className={i < current ? "done" : i === current ? "current" : undefined}
+                              >
+                                {step.label}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
-                  <button
-                    className="button button-outline"
-                    onClick={() =>
-                      notify("임무 상세 API 연결은 다음 통합 단계입니다.")
-                    }
-                  >
-                    임무 상세 <Icon name="arrow" size={15} />
-                  </button>
+                  <div className="mission-actions">
+                    <button
+                      className="button button-outline"
+                      disabled={isSimulation}
+                      title={isSimulation ? "실제 임무에만 사용할 수 있습니다." : undefined}
+                      onClick={() => {
+                        // acceptMission() exists in drone-api.ts but needs a vehicleId that
+                        // this screen does not have: a mission is claimed with one of the
+                        // operator's own vehicles, chosen on the operator side. Surface the
+                        // real requirement instead of a generic "next step" message.
+                        notify("기체 선택이 필요합니다. 운영자 계정에서 내 기체를 선택한 뒤 수락할 수 있습니다.");
+                      }}
+                    >
+                      임무 수락 <Icon name="check" size={14} />
+                    </button>
+                    <button
+                      className="button button-outline"
+                      disabled={isSimulation || mission.status !== "accepted"}
+                      title={
+                        isSimulation
+                          ? "실제 임무에만 사용할 수 있습니다."
+                          : mission.status !== "accepted"
+                            ? "수락된 임무만 시작할 수 있습니다."
+                            : undefined
+                      }
+                      onClick={async () => {
+                        // start_drone_mission (0003) moves accepted -> active and is what
+                        // request_drone_camera_command requires. It was implemented but had
+                        // no UI entry point, so no camera command could ever succeed.
+                        try {
+                          const updated = await startMission(runtime, mission.id);
+                          setMission(updated);
+                          notify(`임무를 시작했습니다 (${updated.status}). 이제 카메라 작업을 요청할 수 있습니다.`);
+                        } catch (error) {
+                          notify(
+                            error instanceof DroneApiError
+                              ? `임무 시작 실패: ${error.message}`
+                              : "임무 시작 중 알 수 없는 오류가 발생했습니다.",
+                          );
+                        }
+                      }}
+                    >
+                      임무 시작 <Icon name="arrow" size={14} />
+                    </button>
+                  </div>
                 </div>
               </section>
 
