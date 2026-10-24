@@ -2004,3 +2004,36 @@ input:focus-visible {
   .drone-error span { flex: 1 1 100%; order: 2; }
   .drone-error button { margin-left: auto; }
 }
+
+/* ---------------------------------------------------------------------------
+   Mission actions (accept / start).
+   Added with the accept/start wiring: the summary row previously ended with a
+   single "임무 상세" button that only showed a placeholder notice.
+--------------------------------------------------------------------------- */
+.mission-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.mission-actions .button {
+ inset-inline: auto;
+}
+
+.mission-actions .button[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .mission-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .mission-actions .button {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+}

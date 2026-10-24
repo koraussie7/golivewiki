@@ -62,8 +62,16 @@ export class DroneApiError extends Error {
 }
 
 const trimSlash = (value: string) => value.replace(/\/+$/, "");
-const DEFAULT_SUPABASE_URL = "https://acxrgrzbukrvvfivysip.supabase.co";
-const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjeHJncnpidWtydnZmaXZ5c2lwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNzY0MDAsImV4cCI6MjEwNzk1MjQwMH0.7xJLloYCQ19jshk3OsHDI0wb4EsYJDPyLn3Il3LmTAs";
+
+/**
+ * No baked-in project credentials. A hardcoded anon key silently points the drone screen at
+ * whichever project was current when it was pasted; a missing config must fail loudly instead.
+ */
+function requireSupabaseConfig(): void {
+  if (!import.meta.env.VITE_SUPABASE_URL?.trim() || !import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()) {
+    throw new DroneApiError("VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 설정이 없습니다.", 0, "SUPABASE_CONFIG_MISSING");
+  }
+}
 
 export function getDroneRuntimeConfig(): DroneRuntimeConfig {
   const env = import.meta.env;
@@ -71,8 +79,8 @@ export function getDroneRuntimeConfig(): DroneRuntimeConfig {
   const apiBaseUrl = runtime?.apiBaseUrl?.trim() || env.VITE_DRONE_API_BASE_URL?.trim() || "";
   return {
     apiBaseUrl: trimSlash(apiBaseUrl),
-    supabaseUrl: trimSlash(runtime?.supabaseUrl?.trim() || env.VITE_SUPABASE_URL?.trim() || DEFAULT_SUPABASE_URL),
-    supabaseAnonKey: runtime?.supabaseAnonKey?.trim() || env.VITE_SUPABASE_ANON_KEY?.trim() || DEFAULT_SUPABASE_ANON_KEY,
+    supabaseUrl: trimSlash(runtime?.supabaseUrl?.trim() || env.VITE_SUPABASE_URL?.trim() || ""),
+    supabaseAnonKey: runtime?.supabaseAnonKey?.trim() || env.VITE_SUPABASE_ANON_KEY?.trim() || "",
     backendAccessToken: runtime?.backendAccessToken?.trim() || "",
     mediamtxWebRtcBaseUrl: trimSlash(runtime?.mediamtxWebRtcBaseUrl?.trim() || env.VITE_MEDIAMTX_WEBRTC_BASE_URL?.trim() || ""),
     missionId: new URLSearchParams(typeof window === "undefined" ? "" : window.location.search).get("missionId")?.trim() || runtime?.missionId?.trim() || env.VITE_DRONE_MISSION_ID?.trim() || "",
@@ -93,6 +101,7 @@ export function getDroneRuntimeConfig(): DroneRuntimeConfig {
 let droneSupabase: SupabaseClient | null = null;
 
 function getSupabase(config: DroneRuntimeConfig): SupabaseClient {
+  requireSupabaseConfig();
   if (!config.supabaseUrl || !config.supabaseAnonKey) throw new DroneApiError("Supabase URL 또는 anon key 설정이 없습니다.", 0, "SUPABASE_CONFIG_MISSING");
   if (!droneSupabase) {
     droneSupabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
@@ -161,10 +170,39 @@ export async function createMission(config: DroneRuntimeConfig, input: {
   return toDroneMission(data);
 }
 
-export async function acceptMission(config: DroneRuntimeConfig, missionId: string): Promise<DroneMission> {
-  const { data, error } = await getSupabase(config).from("drone_missions").update({ status: "accepted" }).eq("id", missionId).eq("status", "requested").select("*").single();
+/**
+ * Claim a mission as the field operator.
+ *
+ * Goes through `accept_drone_mission` (0003_mission_lifecycle.sql) instead of a direct table
+ * update: the RPC sets `operator_id` and `vehicle_id` from the authenticated session inside one
+ * atomic UPDATE. A browser-side update previously omitted `operator_id`, which the 0002 RLS
+ * policy rejected, and never set `vehicle_id`, which blocked every camera command afterwards.
+ */
+export async function acceptMission(config: DroneRuntimeConfig, missionId: string, vehicleId: string): Promise<DroneMission> {
+  if (!vehicleId) throw new DroneApiError("수락할 기체를 선택하세요.", 0, "VEHICLE_ID_MISSING");
+  const { data, error } = await getSupabase(config).rpc("accept_drone_mission", {
+    p_mission_id: missionId,
+    p_vehicle_id: vehicleId,
+  });
   throwDatabaseError(error);
-  return toDroneMission(data);
+  const mission = Array.isArray(data) ? data[0] : data;
+  if (!mission) throw new DroneApiError("서버가 임무를 반환하지 않았습니다.", 502, "EMPTY_MISSION_RESPONSE");
+  return toDroneMission(mission);
+}
+
+/**
+ * Move an accepted mission to `active` once the field agent is publishing video.
+ * `request_drone_camera_command` requires status 'active', so no camera command can succeed
+ * before this runs. Only the assigned operator may call it.
+ */
+export async function startMission(config: DroneRuntimeConfig, missionId: string): Promise<DroneMission> {
+  const { data, error } = await getSupabase(config).rpc("start_drone_mission", {
+    p_mission_id: missionId,
+  });
+  throwDatabaseError(error);
+  const mission = Array.isArray(data) ? data[0] : data;
+  if (!mission) throw new DroneApiError("서버가 임무를 반환하지 않았습니다.", 502, "EMPTY_MISSION_RESPONSE");
+  return toDroneMission(mission);
 }
 
 export interface DroneSessionResponse {
