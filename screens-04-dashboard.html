@@ -331,6 +331,7 @@
     .map-panel { height: 320px; order: -1; }
   }
 </style>
+  <link rel="stylesheet" href="styles/mobile.css" />
 </head>
 <body>
 
@@ -339,6 +340,10 @@
   <header class="topbar">
     <div style="display:flex; align-items:center; gap:20px;">
       <a href="./index.html" class="logo">go<span>live</span>.wiki</a>
+      <nav class="gl-feature-nav" aria-label="기능 메뉴" style="display:flex; align-items:center; gap:6px; margin-left:14px;">
+        <a href="drone.html" style="display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:999px; border:1px solid rgba(139,92,246,0.35); color:#c4b5fd; font-size:13px; font-weight:600; text-decoration:none; white-space:nowrap;">🛸 드론</a>
+        <a href="smartglass.html" style="display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,189,46,0.35); color:#ffd166; font-size:13px; font-weight:600; text-decoration:none; white-space:nowrap;">👓 글라스</a>
+      </nav>
       <div class="search-bar">
         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
         <input type="text" data-i18n-ph="search_ph" placeholder="작업명, 지역(예: 강남구, 역삼동), 키워드 검색"/>

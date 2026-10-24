@@ -1,0 +1,280 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Smartglass control page.
+ *
+ * Written to mirror drone-control.css: same tokens, same dark surface, same amber
+ * accent for the feature. Hand-written rather than Tailwind-only, because the legacy
+ * screens in this repo load no Tailwind build and the page must render identically
+ * whether or not Tailwind is present.
+ *
+ * The Korean font stack matters here for the same reason it did on the Phung Khoang
+ * page: DM Mono has no Hangul, and without a fallback the browser picks an unrelated
+ * script's glyphs.
+ */
+
+/*
+ * Tailwind Preflight sets  and removes heading defaults. Without an
+ * explicit body colour the inherited value is the browser default (black), which is
+ * invisible on the #0f0f0f card surface — the first build showed exactly that.
+ */
+body {
+  margin: 0;
+  background-color: #09090b;
+  color: #e4e4e7;
+}
+
+.glass-bg {
+  --glass-amber: #ffbd2e;
+  --glass-line: rgba(255, 255, 255, 0.08);
+  --glass-surface: #0f0f0f;
+  background-color: #09090b;
+  font-family:
+    "Manrope",
+    "Pretendard",
+    "Apple SD Gothic Neo",
+    "Malgun Gothic",
+    "Noto Sans KR",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  min-height: 100vh;
+}
+
+.glass-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.glass-header {
+  border-bottom: 1px solid var(--glass-line);
+  background-color: rgba(9, 9, 11, 0.85);
+  backdrop-filter: blur(12px);
+  padding: 16px 0;
+}
+
+.glass-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--glass-amber);
+  color: #111;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.glass-muted {
+  color: #a1a1aa;
+}
+
+.glass-card {
+  background-color: var(--glass-surface);
+  border: 1px solid var(--glass-line);
+  border-radius: 16px;
+}
+
+.glass-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-line);
+  font-size: 12px;
+  font-weight: 600;
+  color: #e4e4e7;
+}
+
+.glass-badge--sim {
+  color: var(--glass-amber);
+  border-color: rgba(255, 189, 46, 0.35);
+  background: rgba(255, 189, 46, 0.08);
+}
+
+.glass-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 189, 46, 0.4);
+  background: var(--glass-amber);
+  color: #111;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+
+.glass-btn:hover:not(:disabled) {
+  background: #ffc94f;
+}
+
+.glass-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.glass-btn--ghost {
+  background: transparent;
+  color: #e4e4e7;
+  border-color: var(--glass-line);
+}
+
+.glass-btn--outline {
+  background: transparent;
+  color: #e4e4e7;
+  border-color: var(--glass-line);
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.glass-btn--outline:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 189, 46, 0.35);
+}
+
+/* --- progress --------------------------------------------------------- */
+
+.glass-progress {
+  min-width: 260px;
+}
+
+.glass-progress__label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  color: #a1a1aa;
+}
+
+.glass-progress__label b {
+  color: #fff;
+  font-size: 16px;
+}
+
+.glass-progress__label small {
+  color: #71717a;
+  font-weight: 500;
+}
+
+.glass-progress__track {
+  height: 4px;
+  margin: 8px 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.glass-progress__track i {
+  display: block;
+  height: 100%;
+  background: var(--glass-amber);
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.glass-progress__steps {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #52525b;
+}
+
+.glass-progress__steps .done {
+  color: #a1a1aa;
+}
+
+.glass-progress__steps .current {
+  color: var(--glass-amber);
+  font-weight: 700;
+}
+
+/* --- video ------------------------------------------------------------ */
+
+.glass-video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--glass-line);
+}
+
+.glass-video iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.glass-video__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 100%;
+  color: #71717a;
+  font-size: 13px;
+}
+
+.glass-error {
+  margin-top: 10px;
+  color: #ff6b6b;
+  font-size: 13px;
+}
+
+/* --- log -------------------------------------------------------------- */
+
+.glass-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.glass-log li {
+  display: grid;
+  grid-template-columns: 72px 140px 1fr;
+  gap: 12px;
+  align-items: baseline;
+  padding-top: 8px;
+  border-top: 1px solid var(--glass-line);
+  font-size: 12px;
+}
+
+.glass-log li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.glass-log__time {
+  color: #71717a;
+  font-family: "DM Mono", monospace;
+}
+
+.glass-log__title {
+  color: #e4e4e7;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .glass-wrap {
+    padding: 0 16px;
+  }
+
+  .glass-log li {
+    grid-template-columns: 64px 1fr;
+  }
+
+  .glass-log__title {
+    grid-column: 2;
+  }
+}

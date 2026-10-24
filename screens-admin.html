@@ -304,7 +304,8 @@
         background: #1b1b22;
       }
     </style>
-  </head>
+    <link rel="stylesheet" href="styles/mobile.css" />
+</head>
   <body>
     <!-- Header -->
     <header class="admin-header">
@@ -315,6 +316,10 @@
         </a>
       </div>
       <div style="display: flex; gap: 12px; align-items: center">
+      <nav class="gl-feature-nav" aria-label="기능 메뉴" style="display:flex; align-items:center; gap:6px;">
+        <a href="drone.html" style="display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:999px; border:1px solid rgba(139,92,246,0.35); color:#c4b5fd; font-size:13px; font-weight:600; text-decoration:none; white-space:nowrap;">🛸 드론</a>
+        <a href="smartglass.html" style="display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,189,46,0.35); color:#ffd166; font-size:13px; font-weight:600; text-decoration:none; white-space:nowrap;">👓 글라스</a>
+      </nav>
         <!-- Universal Language Switcher Component -->
         <div class="lang-switcher-wrap">
           <button class="lang-btn" onclick="toggleLangDropdown()">
