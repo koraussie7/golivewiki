@@ -59,6 +59,7 @@ export default defineConfig({
         "screens-admin": resolve(__dirname, "screens-admin.html"),
         "screens-07-ride": resolve(__dirname, "screens-07-ride.html"),
         drone: resolve(__dirname, "drone.html"),
+        phungkhoang: resolve(__dirname, "phungkhoang.html"),
       },
       output: {
         entryFileNames: "assets/[name]-[hash].js",

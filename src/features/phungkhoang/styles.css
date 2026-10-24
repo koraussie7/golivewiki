@@ -1,0 +1,142 @@
+/* Tailwind 유틸리티. 없으면 컴포넌트의 flex/grid 클래스가 CSS 에
+   존재하지 않아 레이아웃이 무너진다. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Phùng Khoang Farm — Custom Styles */
+.farm-bg {
+  background-color: #0a0a0a;
+}
+
+/*
+ * Hangul fallback.
+ *
+ * The page uses DM Mono for mono text and Syne for display. Neither font contains
+ * Hangul, so Korean labels (메뉴, 맨 위로, 시뮬레이션) fell through to whatever the
+ * browser picked — in headless Chrome that produced glyphs from an unrelated
+ * script and looked like a rendering bug.
+ *
+ * Listing a Korean font before the generic family fixes it without shipping a
+ * webfont: Pretendard / Apple SD Gothic Neo / Malgun Gothic cover macOS, Windows
+ * and Linux respectively, and the system sans is the final fallback.
+ */
+.farm-bg,
+.farm-bg button,
+.farm-bg pre,
+.farm-bg code,
+.farm-bg .font-mono {
+  font-family:
+    "DM Mono",
+    "Pretendard",
+    "Apple SD Gothic Neo",
+    "Malgun Gothic",
+    "Noto Sans KR",
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+/* Display font keeps Syne for Latin, with the same Korean fallback chain. */
+.farm-bg h1,
+.farm-bg h2,
+.farm-bg h3,
+.farm-bg.font-['Syne'] {
+  font-family:
+    "Syne",
+    "Pretendard",
+    "Apple SD Gothic Neo",
+    "Malgun Gothic",
+    "Noto Sans KR",
+    system-ui,
+    sans-serif;
+}
+
+.farm-card {
+  background-color: #0f0f0f;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.farm-card-hover:hover {
+  background-color: #151515;
+  transition: background-color 0.2s ease;
+}
+
+.farm-border {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.farm-text-muted {
+  color: #71717a;
+}
+
+.farm-text-accent {
+  color: #ffbd2e;
+}
+
+.farm-text-success {
+  color: #00ff88;
+}
+
+.farm-input-bg {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+.farm-scrollbar::-webkit-scrollbar {
+  height: 4px;
+}
+
+.farm-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.farm-scrollbar::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 2px;
+}
+
+.farm-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
+/* ---------------------------------------------------------------------------
+   Menu icon
+   The "≡" (U+2261) glyph is not present in DM Mono, so the button rendered a
+   tofu box. Drawing three bars with borders makes the icon independent of font
+   coverage and keeps it crisp at any zoom level.
+--------------------------------------------------------------------------- */
+.farm-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+}
+
+.farm-menu-icon {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2.5px;
+  width: 13px;
+  height: 12px;
+  flex: 0 0 auto;
+}
+
+.farm-menu-icon i {
+  display: block;
+  height: 1.5px;
+  width: 100%;
+  background-color: currentColor;
+  border-radius: 1px;
+}
+
+/* The header spec line was 12px on zinc-400 over near-black; at that size and
+   contrast the product specification was hard to read. */
+.farm-text-muted {
+  letter-spacing: 0.01em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .farm-menu-icon i {
+    transition: none;
+  }
+}
