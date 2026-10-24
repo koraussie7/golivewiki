@@ -1,0 +1,20 @@
+{
+  "name": "@golive/drone-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "GoLive drone field agent — MAVSDK camera adapter with the camera-only command contract",
+  "main": "src/index.mjs",
+  "scripts": {
+    "start": "node src/index.mjs",
+    "test": "node --test test/*.test.mjs",
+    "sitl": "node src/index.mjs --url udp://:14540"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "zod": "^3.23.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
