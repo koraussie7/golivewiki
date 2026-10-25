@@ -1,0 +1,13 @@
+{
+  "name": "golive-brand-extraction",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "브랜드 디자인 토큰 추출 도구 — web-client/public/styles/tokens.css 근거 데이터 생성",
+  "scripts": {
+    "extract": "node extract-brand.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.59.1"
+  }
+}
