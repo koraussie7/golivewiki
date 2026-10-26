@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>로그인 — golive.wiki</title>
+    <link rel="stylesheet" href="styles/tokens.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --at-primary: #14EBC0;
+        --at-primary-hover: #0fd2ab;
+        --at-blue: #0A65FC;
+        --at-dark: #09090B;
+        --at-card-bg: #141418;
+        --at-border: #27272A;
+        --at-text-main: #FAFAFA;
+        --at-text-muted: #A1A1AA;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: var(--at-dark);
+        color: var(--at-text-main);
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        margin: 0;
+        padding: 0;
+        line-height: 1.5;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      header.global-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        background: rgba(9, 9, 11, 0.88);
+        backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--at-border);
+        padding: 12px 24px;
+      }
+      .nav-inner {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-weight: 800;
+        font-size: 21px;
+        letter-spacing: -0.03em;
+        color: #fff;
+      }
+      .logo span { color: var(--at-primary); }
+      .nav-link {
+        color: var(--at-text-muted);
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        padding: 8px 12px;
+        border-radius: 8px;
+        transition: color .2s;
+      }
+      .nav-link:hover { color: #fff; }
+      .login-wrap {
+        width: 100%;
+        max-width: 420px;
+        padding: 24px;
+      }
+      .login-card {
+        background: var(--at-card-bg);
+        border: 1px solid var(--at-border);
+        border-radius: 20px;
+        padding: 40px 32px;
+      }
+      .login-title {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin-bottom: 8px;
+      }
+      .login-sub {
+        color: var(--at-text-muted);
+        font-size: 15px;
+        margin-bottom: 32px;
+      }
+      .input-group {
+        margin-bottom: 16px;
+      }
+      .input-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--at-text-muted);
+        margin-bottom: 6px;
+        display: block;
+      }
+      .styled-input {
+        width: 100%;
+        background: #0E0E11;
+        border: 1px solid var(--at-border);
+        border-radius: 10px;
+        padding: 12px 14px;
+        color: #fff;
+        font-size: 14px;
+        outline: none;
+        box-sizing: border-box;
+      }
+      .styled-input:focus { border-color: var(--at-primary); }
+      .btn-login {
+        width: 100%;
+        background: var(--at-primary);
+        color: #09090B !important;
+        font-weight: 700 !important;
+        padding: 12px 0;
+        border-radius: 10px;
+        font-size: 15px;
+        border: none;
+        cursor: pointer;
+        margin-top: 8px;
+        transition: transform .15s, filter .15s;
+      }
+      .btn-login:hover { filter: brightness(1.08); }
+      .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+      .divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 24px 0;
+        color: var(--at-text-muted);
+        font-size: 12px;
+      }
+      .divider::before, .divider::after { content: ""; flex: 1; border-bottom: 1px solid var(--at-border); }
+      .signup-link {
+        text-align: center;
+        font-size: 14px;
+        color: var(--at-text-muted);
+        margin-top: 16px;
+      }
+      .signup-link a {
+        color: var(--at-primary);
+        text-decoration: none;
+        font-weight: 600;
+      }
+      .signup-link a:hover { text-decoration: underline; }
+      .error-msg {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        margin-bottom: 16px;
+        display: none;
+      }
+      .success-msg {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: #86efac;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        margin-bottom: 16px;
+        display: none;
+      }
+      @media (max-width: 480px) {
+        .login-wrap { padding: 16px; }
+        .login-card { padding: 32px 24px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="global-nav">
+      <div class="nav-inner">
+        <a href="./index.html" class="logo">
+          go<span>live</span>.wiki
+        </a>
+        <a href="./index.html" class="nav-link">홈으로</a>
+      </div>
+    </header>
+
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="login-title">로그인</div>
+        <div class="login-sub">golive.wiki 계정으로 로그인하세요.</div>
+
+        <div id="error" class="error-msg"></div>
+        <div id="success" class="success-msg"></div>
+
+        <form id="loginForm" method="post" autocomplete="on">
+          <div class="input-group">
+            <label class="input-label" for="email">이메일</label>
+            <input type="email" id="email" class="styled-input" required placeholder="you@example.com" />
+          </div>
+          <div class="input-group">
+            <label class="input-label" for="password">비밀번호</label>
+            <input type="password" id="password" class="styled-input" required placeholder="••••••••" />
+          </div>
+          <button type="submit" id="submitBtn" class="btn-login">로그인</button>
+        </form>
+
+        <div class="divider">또는</div>
+
+        <p class="signup-link">
+          계정이 없으신가요? <a href="./login.html?mode=signup">회원가입</a>
+        </p>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      (function () {
+        const SUPABASE_URL = 'https://acxrgrzbukrvvfivysip.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjeHJncnpidWtydnZmaXZ5c2lwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNzY0MDAsImV4cCI6MjEwNzk1MjQwMH0.7xJLloYCQ19jshk3OsHDI0wb4EsYJDPyLn3Il3LmTAs';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window.goliveSupabase = supabase;
+
+        const form = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorEl = document.getElementById('error');
+        const successEl = document.getElementById('success');
+
+        function showError(msg) {
+          errorEl.textContent = msg;
+          errorEl.style.display = 'block';
+          successEl.style.display = 'none';
+        }
+        function showSuccess(msg) {
+          successEl.textContent = msg;
+          successEl.style.display = 'block';
+          errorEl.style.display = 'none';
+        }
+        function hideMessages() {
+          errorEl.style.display = 'none';
+          successEl.style.display = 'none';
+        }
+
+        // Only admins may enter dashboard routes; reject external next URLs.
+        const safeNext = (() => {
+          const raw = new URLSearchParams(location.search).get('next') || './screens-04-dashboard.html';
+          try {
+            const target = new URL(raw, location.href);
+            if (target.origin !== location.origin) return './';
+            if (!['/screens-04-dashboard.html', '/screens-admin.html', '/'].includes(target.pathname)) return './';
+            return target.pathname + target.search + target.hash;
+          } catch { return './'; }
+        })();
+        async function continueIfAdmin(session) {
+          if (!session) return false;
+          const { data: isAdmin, error } = await supabase.rpc('is_current_user_admin');
+          if (error || isAdmin !== true) {
+            await supabase.auth.signOut();
+            showError('관리자 권한이 확인되지 않았습니다. 관리자 계정으로 로그인하세요.');
+            return false;
+          }
+          location.replace(safeNext);
+          return true;
+        }
+        supabase.auth.getSession().then(({ data }) => continueIfAdmin(data.session));
+
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          hideMessages();
+          submitBtn.disabled = true;
+          submitBtn.textContent = '로그인 중…';
+
+          try {
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email: emailInput.value.trim(),
+              password: passwordInput.value,
+            });
+
+            if (error) throw error;
+
+            const allowed = await continueIfAdmin(data.session);
+            if (allowed) showSuccess('관리자 로그인 성공했습니다. 이동 중…');
+          } catch (err) {
+            showError(err.message || '로그인에 실패했습니다.');
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '로그인';
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
