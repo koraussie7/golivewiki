@@ -1,4 +1,13 @@
 # golive.wiki
+## Source of truth and deployment
+- **Canonical local checkout:** `/Users/brianyeon/Domains/golive.wiki/golivewiki`
+- **Canonical branch:** `main`
+- **Canonical remote:** `origin` → `git@github.com:koraussie7/goliveb.git`
+- `golivewiki-repo` is a second clone of the same repository. Do not edit or commit there; use the canonical checkout above.
+- Before changing the source, run `git status -sb` and preserve existing work. Do not reset or overwrite uncommitted changes.
+
+The production hostname `golive.wiki` is routed by Charon to the app on `host.docker.internal:7681`. `/var/www/golive.wiki` is a static fallback/legacy directory, **not the active production source**. Confirm the actual serving path before deploying; a local Vite build alone does not publish changes to the live app.
+
 
 > Airtasker-inspired gig marketplace UI with **first-class multilingual support** (7 direct native languages + Google Translate fallback).
 
