@@ -1,0 +1,1558 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="supabase-url" content="" />
+    <meta name="supabase-anon-key" content="" />
+    <!-- 유효한 지도 키가 확정되면 여기에 넣는다. 현재 키는 403(만료/무효)이라
+         넣어두면 지도가 켜진 채 타일이 전부 깨진다. 제공자 미확정 = 지도 OFF 유지. -->
+    <meta name="maptiler-key" content="" />
+    <title>golive.wiki — Banchan &amp; Today's Chicken (UI mock)</title>
+    <link rel="stylesheet" href="./styles/tokens.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="./styles/i18n.js"></script>
+    <script>
+      /* 지도는 지연 로딩한다 (플랜 3단계 · 4장).
+       *
+       * 기본값은 꺼져 있다. 플랜 3장이 "지도 라이브러리와 지도 제공자의
+       * 이용약관·비용·표시 의무는 구현 전에 확인한다"고 못박았고, 지금 쓰는
+       * OpenStreetMap 공개 타일은 키가 없어 운영 트래픽에 부적합하다.
+       * 운영 제공자를 정하기 전까지는 지도 없이(로컬 좌표 미리보기) 동작해야 한다.
+       *
+       * 켜는 법(제공자 확정 후):
+       *   <body data-map-provider="osm">  또는 window.__ENV__.MAP_PROVIDER = "osm"
+       */
+      /* 선택 설정 로더 — 정적 화면에서 콘솔 없이 설정을 주입하고 싶을 때 쓴다.
+       * 쿼리 문자열의 mapProvider / tileUrl / assetBase 만 읽고, 없으면 무시한다.
+       * 파일을 고치지 않고도 운영자가 지도·영상 URL 을 시험할 수 있게 하려는 것.
+       * (지도 OFF·목업 예약 불가는 기본값 그대로 유지된다) */
+      window.__ENV__ = window.__ENV__ || {};
+      try {
+        const q = new URLSearchParams(window.location.search);
+        for (const [key, envKey] of [
+          ["mapProvider", "MAP_PROVIDER"],
+          ["tileUrl", "TILE_URL"],
+          ["assetBase", "ASSET_BASE_URL"],
+          // 개발용. 키를 파일에 넣지 않고 시험할 때만 쓴다.
+          ["maptilerKey", "MAPTILER_KEY"],
+        ]) {
+          const v = q.get(key);
+          if (v && !window.__ENV__[envKey]) window.__ENV__[envKey] = v;
+        }
+      } catch (_e) {
+        /* 구형 브라우저: 무시하고 기본값 사용 */
+      }
+
+      window.__mapCfg = function () {
+        const env = window.__ENV__ || {};
+        const fromDom = document.body && document.body.dataset.mapProvider;
+        // 키 주입 경로(우선순위): window.__ENV__.MAPTILER_KEY → meta[name=maptiler-key]
+        // 저장소에는 키를 두지 않으므로 배포 단계에서 둘 중 하나로 넣는다.
+        // (정적 호스팅이면 meta, 번들/서버 템플릿이면 __ENV__)
+        const envKey = env.MAPTILER_KEY || env.MAP_TILE_KEY || "";
+        const metaKey =
+          envKey ||
+          document.querySelector('meta[name="maptiler-key"]')?.content ||
+          "";
+        const provider =
+          env.MAP_PROVIDER || fromDom || (metaKey ? "maptiler" : "none");
+        let tileUrl = env.TILE_URL || "";
+        if (!tileUrl && metaKey) {
+          tileUrl = `https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=${encodeURIComponent(
+            metaKey,
+          )}`;
+        }
+        return {
+          provider,
+          tileUrl,
+          apiKey: metaKey,
+        };
+      };
+
+      /* Leaflet 1.9.4 — SRI 는 배포된 실제 파일로 계산한 sha384 값이다.
+         (이전 값은 맞지 않아 브라우저가 리소스를 차단했다) */
+      window.__loadLeaflet = function () {
+        if (window.__leafletLoading) return window.__leafletLoading;
+        const CSS_SRI =
+          "sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H";
+        const JS_SRI =
+          "sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH";
+        const base = "https://unpkg.com/leaflet@1.9.4/dist/";
+
+        window.__leafletLoading = new Promise((resolve, reject) => {
+          const link = document.createElement("link");
+          link.rel = "stylesheet";
+          link.href = base + "leaflet.css";
+          link.integrity = CSS_SRI;
+          link.crossOrigin = "anonymous";
+          link.onerror = () => reject(new Error("leaflet.css blocked or failed"));
+          document.head.appendChild(link);
+
+          const s = document.createElement("script");
+          s.src = base + "leaflet.js";
+          s.integrity = JS_SRI;
+          s.crossOrigin = "anonymous";
+          s.onload = () =>
+            window.L ? resolve(window.L) : reject(new Error("L missing"));
+          s.onerror = () => reject(new Error("leaflet.js blocked or failed"));
+          document.head.appendChild(s);
+        });
+        return window.__leafletLoading;
+      };
+    </script>
+
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--at-dark);
+        color: var(--at-text-main);
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+        min-height: 100vh;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      button,
+      select,
+      input {
+        font: inherit;
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 2px solid var(--at-primary);
+        outline-offset: 2px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 58px;
+        padding: 0 16px;
+        background: rgba(9, 9, 11, 0.94);
+        border-bottom: 1px solid var(--at-border);
+      }
+      .brand {
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        font-size: 17px;
+        white-space: nowrap;
+      }
+      .brand span {
+        color: var(--at-primary);
+      }
+      .topbar .spacer {
+        flex: 1;
+      }
+      .topbar .back {
+        font-size: 13px;
+        color: var(--at-text-muted);
+        white-space: nowrap;
+      }
+      .topbar .back:hover {
+        color: var(--at-text-main);
+      }
+
+      /* 더미 안내는 1단계의 핵심 고지다. 스크롤하다 헤더에 가려 읽을 수 없으면 안 된다.
+         헤더와 배너를 하나의 sticky 묶음(.sticky-top)으로 감싸 두 줄 헤더에서도 겹치지 않게 한다.
+         (이전에는 배너만 top:58px 로 붙어 모바일의 두 줄 헤더를 침범해 글자가 겹쳤다) */
+      .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+      }
+      .mock-banner {
+        position: relative;
+        z-index: 29;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        padding: 10px 16px;
+        background: rgba(24, 18, 6, 0.97);
+        -webkit-backdrop-filter: blur(8px);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+        color: #fcd34d;
+        font-size: 12.5px;
+        line-height: 1.5;
+      }
+      .mock-banner strong {
+        color: #fde68a;
+      }
+
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 16px 16px 80px;
+      }
+
+      .loc-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: flex-end;
+        padding: 14px;
+        border: 1px solid var(--at-border);
+        border-radius: 14px;
+        background: var(--at-card-bg);
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 148px;
+      }
+      .field > label {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--at-text-muted);
+      }
+      select,
+      .btn {
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 10px;
+        background: var(--at-pill-bg);
+        border: 1px solid var(--at-border);
+      }
+      select:hover {
+        border-color: var(--at-border-hover);
+      }
+      .btn {
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+      }
+      .btn:hover {
+        border-color: var(--at-border-hover);
+      }
+      .btn-ghost {
+        background: transparent;
+      }
+      .btn-primary {
+        background: var(--at-primary);
+        color: #04211b;
+        border-color: var(--at-primary);
+      }
+      .btn-primary:hover {
+        background: var(--at-primary-hover);
+      }
+
+      .mode-group {
+        display: flex;
+        gap: 6px;
+      }
+      .seg {
+        display: inline-flex;
+        padding: 3px;
+        gap: 3px;
+        border-radius: 12px;
+        background: var(--at-pill-bg);
+        border: 1px solid var(--at-border);
+      }
+      .seg button {
+        height: 32px;
+        padding: 0 14px;
+        border: 0;
+        border-radius: 9px;
+        background: transparent;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--at-text-muted);
+      }
+      .seg button[aria-selected="true"] {
+        background: var(--at-primary);
+        color: #04211b;
+      }
+
+      .geo-note {
+        font-size: 12px;
+        color: var(--at-text-muted);
+        flex-basis: 100%;
+        line-height: 1.5;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .badges {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      /* 상태 배지와 수량 배지는 항상 서로 다른 줄에 둔다 */
+      .badges .badge.goal-reached {
+        white-space: nowrap;
+      }
+      /* 상태 배지만 한 줄을 차지하게 하고, 수량 배지는 다음 줄로 내린다 */
+      .badges .badge.goal-reached::after {
+        content: "";
+        flex-basis: 100%;
+      }
+      .badges .badge.goal-count {
+        font-family: "JetBrains Mono", monospace;
+        white-space: nowrap;
+      }
+      .goal-note {
+        font-size: 11.5px;
+        line-height: 1.45;
+        color: var(--at-text-muted);
+        word-break: keep-all;
+      }
+
+      /* 2단계 예약 UI */
+      input[type="tel"] {
+        width: 100%;
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 10px;
+        border: 1px solid var(--at-border);
+        background: var(--at-pill-bg);
+      }
+      .contact-note {
+        margin-top: 6px;
+        font-size: 11.5px;
+        color: var(--at-text-muted);
+      }
+      .booking-status {
+        font-size: 12.5px;
+        line-height: 1.5;
+        min-height: 0;
+      }
+      .booking-status:empty {
+        display: none;
+      }
+      .booking-status.error {
+        color: #fca5a5;
+        padding: 9px 11px;
+        border-radius: 10px;
+        border: 1px solid rgba(239, 68, 68, 0.45);
+        background: rgba(239, 68, 68, 0.08);
+      }
+      .booking-status.pending {
+        color: var(--at-text-muted);
+      }
+      .order-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .order-row {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--at-border);
+        background: var(--at-pill-bg);
+      }
+      .order-main {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .order-code {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        letter-spacing: 0.02em;
+      }
+      .order-sub {
+        font-size: 12.5px;
+        color: var(--at-text-muted);
+        word-break: break-all;
+      }
+      .empty-inline {
+        font-size: 13px;
+        color: var(--at-text-muted);
+        line-height: 1.6;
+      }
+      .empty-inline.error {
+        color: #fca5a5;
+      }
+
+      /* The shared i18n.js inserts .lang-switcher-wrap as a <script> sibling in
+         <head>, so the browser hoists it into <body> *before* this header. Push it
+         to the right end of the top bar without touching the engine's own
+         .lang-btn / .lang-dropdown styling. */
+      .lang-switcher-wrap {
+        margin-left: auto;
+        align-self: center;
+        max-width: 100%;
+      }
+      /* everything after it in the bar sits left of the switcher */
+      .topbar > .lang-switcher-wrap ~ .mock-tag-top,
+      .topbar > .lang-switcher-wrap ~ .spacer,
+      .topbar > .lang-switcher-wrap ~ .back {
+        margin-left: 0;
+      }
+      .topbar {
+        white-space: nowrap;
+      }
+      .topbar .back {
+        margin-left: 8px;
+      }
+      .topbar .spacer {
+        order: 1;
+      }
+      .topbar > .lang-switcher-wrap {
+        order: 2;
+      }
+      .topbar > .back {
+        order: 3;
+      }
+      .topbar > .mock-tag-top {
+        order: 0;
+      }
+      .topbar > .brand {
+        order: 0;
+      }
+      .topbar > .spacer ~ * {
+        flex: 0 0 auto;
+      }
+
+      .chips {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 14px 0 4px;
+        scrollbar-width: none;
+      }
+      .chips::-webkit-scrollbar {
+        display: none;
+      }
+      .chip {
+        flex: 0 0 auto;
+        height: 34px;
+        padding: 0 14px;
+        border-radius: 999px;
+        border: 1px solid var(--at-border);
+        background: var(--at-pill-bg);
+        font-size: 13px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .chip[aria-pressed="true"] {
+        border-color: var(--at-primary);
+        color: var(--at-primary);
+        background: rgba(20, 235, 192, 0.08);
+      }
+
+      .section {
+        margin-top: 22px;
+      }
+      .section-head {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+      }
+      .section-head h2 {
+        font-size: 16px;
+        letter-spacing: -0.01em;
+      }
+      .section-head .sub {
+        font-size: 12px;
+        color: var(--at-text-muted);
+      }
+      .section-head .local-date {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--at-text-muted);
+      }
+
+      .map {
+        position: relative;
+        height: 280px;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid var(--at-border);
+        background:
+          linear-gradient(rgba(20, 235, 192, 0.05), rgba(10, 101, 252, 0.05)),
+          repeating-linear-gradient(0deg, #101014 0 39px, #17171c 39px 40px),
+          repeating-linear-gradient(90deg, #101014 0 39px, #17171c 39px 40px);
+      }
+      .map-tag {
+        position: absolute;
+        left: 12px;
+        top: 12px;
+        z-index: 2;
+        padding: 4px 8px;
+        border-radius: 8px;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        background: rgba(9, 9, 11, 0.82);
+        border: 1px solid var(--at-border);
+        color: var(--at-text-muted);
+      }
+      .map-empty {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: grid;
+        place-content: center;
+        gap: 6px;
+        text-align: center;
+        padding: 24px;
+        font-size: 13px;
+        color: var(--at-text-muted);
+        background: rgba(9, 9, 11, 0.55);
+      }
+      .map-empty strong {
+        color: var(--at-text-main);
+        font-size: 14.5px;
+      }
+      .marker {
+        position: absolute;
+        transform: translate(-50%, -100%);
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        background: none;
+        border: 0;
+        cursor: pointer;
+        padding: 0;
+      }
+      .marker .pin {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        font-size: 15px;
+        background: var(--at-card-bg);
+        border: 2px solid var(--at-primary);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+      }
+      .marker[aria-pressed="true"] .pin {
+        background: var(--at-primary);
+      }
+      .marker .tag {
+        font-size: 11px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        white-space: nowrap;
+        background: rgba(9, 9, 11, 0.85);
+        border: 1px solid var(--at-border);
+      }
+      .map-info {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        z-index: 2;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(20, 20, 24, 0.97);
+        border: 1px solid var(--at-border);
+      }
+      .map-info .ph {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 22px;
+        background: var(--at-pill-bg);
+      }
+      .map-info .grow {
+        flex: 1;
+        min-width: 0;
+      }
+      .map-info .name {
+        font-weight: 700;
+        font-size: 13.5px;
+      }
+      .map-info .meta {
+        font-size: 12px;
+        color: var(--at-text-muted);
+        margin-top: 2px;
+        line-height: 1.45;
+      }
+
+      /* 숏폼은 세로 스크롤 피드다 (플랜 4장: 세로 9:16 + 세로 스와이프).
+         가로 그리드를 쓰면 5번째 카드가 혼자 다음 행에 떨어져 피드처럼 보이지 않는다. */
+      /* 가게 목록: 행으로 흐르는 카드 그리드 (가로 스크롤 아님) */
+      .feed-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+        gap: 14px;
+      }
+
+      .feed {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(232px, 260px);
+        gap: 14px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        padding-bottom: 8px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--at-border-hover) transparent;
+      }
+      .feed::-webkit-scrollbar {
+        height: 8px;
+      }
+      .feed::-webkit-scrollbar-thumb {
+        background: var(--at-border-hover);
+        border-radius: 999px;
+      }
+      .feed::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .feed-card {
+        scroll-snap-align: start;
+      }
+      /* 4단계 숏폼: 실제 <video> 기반 9:16 세로 카드 */
+      .feed-card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--at-border);
+        border-radius: 16px;
+        overflow: hidden;
+        background: var(--at-card-bg);
+      }
+      .feed-card:hover {
+        border-color: var(--at-border-hover);
+      }
+      .feed-card .video-wrapper {
+        position: relative;
+        aspect-ratio: 9 / 16;
+        max-height: 380px;
+        width: 100%;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(160deg, #1b1b22, #101014 60%, #0c0c10);
+      }
+      .feed-card .feed-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        background: #000;
+      }
+      .feed-card .btn-play,
+      .feed-card .btn-mute {
+        position: absolute;
+        z-index: 5;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 1px solid var(--at-border);
+        background: rgba(9, 9, 11, 0.75);
+        color: var(--at-text-main);
+        font-size: 16px;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        -webkit-backdrop-filter: blur(4px);
+        backdrop-filter: blur(4px);
+      }
+      .feed-card .btn-play {
+        top: 12px;
+        left: 12px;
+      }
+      .feed-card .btn-mute {
+        top: 12px;
+        right: 12px;
+      }
+      .feed-card .btn-play::before,
+      .feed-card .btn-mute::before {
+        content: "";
+        display: block;
+        width: 14px;
+        height: 14px;
+      }
+      .feed-card .btn-play[data-action="toggle-play"]::before {
+        clip-path: polygon(30% 25%, 30% 75%, 75% 50%);
+        background: currentColor;
+      }
+      .feed-card .video-caption {
+        position: absolute;
+        bottom: 14px;
+        left: 12px;
+        right: 12px;
+        z-index: 5;
+        font-size: 12px;
+        color: var(--at-text-main);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        overflow: hidden;
+      }
+      .feed-card .video-duration {
+        position: absolute;
+        bottom: 12px;
+        right: 12px;
+        z-index: 5;
+        font-size: 11px;
+        color: var(--at-text-muted);
+        background: rgba(9, 9, 11, 0.6);
+        padding: 2px 7px;
+        border-radius: 6px;
+        border: 1px solid var(--at-border);
+      }
+      .feed-card .poster-placeholder {
+        position: relative;
+        aspect-ratio: 9 / 16;
+        max-height: 380px;
+        width: 100%;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(160deg, #1b1b22, #101014 60%, #0c0c10);
+      }
+      .feed-card .poster-placeholder .poster-label {
+        font-size: 10.5px;
+        letter-spacing: 0.05em;
+        padding: 3px 7px;
+        border-radius: 6px;
+        background: rgba(9, 9, 11, 0.82);
+        border: 1px solid var(--at-border);
+        color: var(--at-text-muted);
+      }
+      .feed-card .poster-placeholder .emoji {
+        font-size: 54px;
+      }
+      .feed-card .feed-body {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        padding: 12px;
+      }
+      .feed-card .feed-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: auto;
+      }
+      .feed-card .feed-actions .btn {
+        flex: 1;
+      }
+      .feed-card .feed-actions .state {
+        flex: 1;
+        text-align: center;
+        padding: 8px 0;
+        font-size: 12px;
+        color: var(--at-text-muted);
+        border: 1px dashed var(--at-border);
+        border-radius: 8px;
+      }
+      .feed-card .goal-note {
+        line-height: 1.5;
+        word-break: keep-all;
+        font-size: 11px;
+        color: var(--at-text-muted);
+      }
+      .feed-card .shop {
+        font-size: 12px;
+        color: var(--at-text-muted);
+      }
+      .feed-card .menu {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--at-text-main);
+        margin: 0;
+      }
+      .feed-card .row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: var(--at-text-main);
+      }
+      .feed-card .price {
+        font-weight: 600;
+      }
+      .feed-card .pickup {
+        color: var(--at-text-muted);
+      }
+      .feed-card .badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .card {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--at-border);
+        border-radius: 16px;
+        overflow: hidden;
+        background: var(--at-card-bg);
+      }
+      .card:hover {
+        border-color: var(--at-border-hover);
+      }
+      .card .thumb {
+        position: relative;
+        aspect-ratio: 9 / 16;
+        max-height: 380px;
+        width: 100%;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(160deg, #1b1b22, #101014 60%, #0c0c10);
+      }
+      .card .thumb .emoji {
+        font-size: 54px;
+      }
+      .card .thumb .poster-label {
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        font-size: 10.5px;
+        letter-spacing: 0.05em;
+        padding: 3px 7px;
+        border-radius: 6px;
+        background: rgba(9, 9, 11, 0.82);
+        border: 1px solid var(--at-border);
+        color: var(--at-text-muted);
+      }
+      .card .thumb .muted-ico {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 1px solid var(--at-border);
+        background: rgba(9, 9, 11, 0.82);
+        display: grid;
+        place-items: center;
+        font-size: 14px;
+      }
+      .card .body {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        padding: 12px;
+      }
+      .card .menu {
+        font-weight: 700;
+        font-size: 14.5px;
+        letter-spacing: -0.01em;
+        line-height: 1.35;
+      }
+      .card .shop {
+        font-size: 12px;
+        color: var(--at-text-muted);
+      }
+      .card .row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .price {
+        font-weight: 800;
+        font-size: 15px;
+        color: var(--at-primary);
+      }
+      .pickup {
+        font-size: 12px;
+        color: var(--at-text-muted);
+      }
+      .badge {
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        border: 1px solid var(--at-border);
+        color: var(--at-text-muted);
+        white-space: nowrap;
+      }
+      .badge.group {
+        border-color: rgba(10, 101, 252, 0.6);
+        color: #93b8ff;
+      }
+      .badge.progress {
+        border-color: rgba(20, 235, 192, 0.5);
+        color: var(--at-primary);
+      }
+      .badge.soldout {
+        border-color: rgba(239, 68, 68, 0.6);
+        color: #fca5a5;
+      }
+      .badge.closed {
+        border-color: rgba(161, 161, 170, 0.5);
+        color: var(--at-text-muted);
+      }
+      .card .actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 2px;
+      }
+      .card .actions .btn {
+        flex: 1;
+      }
+      .card .actions .state {
+        flex: 1;
+        display: grid;
+        place-content: center;
+        height: 38px;
+        font-size: 12.5px;
+        color: var(--at-text-muted);
+        border: 1px dashed var(--at-border);
+        border-radius: 10px;
+      }
+
+      .strip {
+        display: flex;
+        gap: 12px;
+        overflow-x: auto;
+        padding-bottom: 6px;
+      }
+      .chicken-item {
+        flex: 0 0 auto;
+        width: 236px;
+        padding: 12px;
+        border-radius: 14px;
+        border: 1px solid var(--at-border);
+        background: var(--at-card-bg);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        cursor: pointer;
+        text-align: left;
+      }
+      .chicken-item:hover {
+        border-color: var(--at-border-hover);
+      }
+      .chicken-item .top {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .chicken-item .ico {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        font-size: 24px;
+        background: var(--at-pill-bg);
+        flex: 0 0 auto;
+      }
+      .chicken-item .nm {
+        font-weight: 700;
+        font-size: 13.5px;
+        line-height: 1.3;
+      }
+      .chicken-item .sh {
+        font-size: 11.5px;
+        color: var(--at-text-muted);
+        margin-top: 2px;
+      }
+      .chicken-item .nm,
+      .chicken-item .sh,
+      .chicken-item .pickup {
+        word-break: keep-all;
+        overflow-wrap: anywhere;
+        line-height: 1.45;
+      }
+      .chicken-item .price {
+        white-space: nowrap;
+      }
+      .chicken-item .badge {
+        white-space: normal;
+        line-height: 1.4;
+        text-align: left;
+        word-break: keep-all;
+      }
+      /* 치킨 카드의 배지 묶음: flex 기본값 때문에 좁은 폭에서
+         한 글자씩 쪼개져 3줄로 깨졌다. 세로로 쌓고 폭을 다 쓴다. */
+      .chicken-item .badges {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+      }
+      .chicken-item .badge.goal-reached,
+      .chicken-item .badge.goal-count {
+        max-width: 100%;
+        white-space: nowrap;
+        word-break: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .chicken-item .badge.goal-count {
+        font-family: "JetBrains Mono", monospace;
+        letter-spacing: 0.01em;
+      }
+      .chicken-item .top > div {
+        min-width: 0;
+      }
+
+      .empty {
+        padding: 34px 18px;
+        border: 1px dashed var(--at-border);
+        border-radius: 16px;
+        text-align: center;
+        color: var(--at-text-muted);
+        font-size: 13.5px;
+        line-height: 1.7;
+      }
+      .empty .big {
+        font-size: 15px;
+        color: var(--at-text-main);
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+
+      dialog.sheet {
+        width: min(560px, calc(100vw - 24px));
+        max-height: calc(100vh - 32px);
+        margin: auto;
+        padding: 0;
+        border: 1px solid var(--at-border);
+        border-radius: 18px;
+        background: var(--at-card-bg);
+        color: var(--at-text-main);
+        overflow: auto;
+      }
+      dialog.sheet::backdrop {
+        background: rgba(0, 0, 0, 0.62);
+      }
+      .sheet-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--at-border);
+        position: sticky;
+        top: 0;
+        background: var(--at-card-bg);
+        z-index: 1;
+      }
+      .sheet-head h3 {
+        font-size: 15.5px;
+        flex: 1;
+        line-height: 1.35;
+      }
+      .sheet-body {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .bi-hero {
+        height: 128px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        font-size: 54px;
+        background: linear-gradient(160deg, #1b1b22, #101014);
+      }
+      .kv {
+        display: grid;
+        grid-template-columns: 104px 1fr;
+        gap: 8px 12px;
+        font-size: 13px;
+      }
+      .kv dt {
+        color: var(--at-text-muted);
+      }
+      .kv dd {
+        line-height: 1.55;
+        word-break: keep-all;
+      }
+      .lbl.inline {
+        margin: 0;
+      }
+      .demo-note {
+        font-size: 12px;
+        line-height: 1.6;
+        color: var(--at-text-muted);
+      }
+      .qr-note {
+        font-size: 12px;
+        line-height: 1.6;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(10, 101, 252, 0.45);
+        background: rgba(10, 101, 252, 0.08);
+        color: #bfd3ff;
+      }
+      .qty {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--at-border);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .qty button {
+        width: 38px;
+        height: 38px;
+        background: var(--at-pill-bg);
+        border: 0;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      .qty button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .qty output {
+        width: 46px;
+        text-align: center;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+      .sheet-foot {
+        display: flex;
+        gap: 8px;
+        padding: 12px 16px;
+        border-top: 1px solid var(--at-border);
+        position: sticky;
+        bottom: 0;
+        background: var(--at-card-bg);
+      }
+      .sheet-foot .btn {
+        flex: 1;
+      }
+      .field-inline {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        font-size: 13px;
+      }
+      .sheet-body .lbl {
+        font-size: 12px;
+        color: var(--at-text-muted);
+        display: block;
+        margin-bottom: 4px;
+      }
+      .sheet-body select {
+        width: 100%;
+      }
+
+      #toast {
+        position: fixed;
+        left: 50%;
+        bottom: 20px;
+        transform: translate(-50%, 20px);
+        z-index: 60;
+        max-width: min(480px, calc(100vw - 32px));
+        padding: 11px 16px;
+        border-radius: 12px;
+        background: var(--at-card-bg);
+        border: 1px solid var(--at-border);
+        font-size: 13px;
+        line-height: 1.5;
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          opacity 0.16s ease,
+          transform 0.16s ease;
+      }
+      #toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @media (max-width: 520px) {
+        .loc-bar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+        .field {
+          min-width: 0;
+        }
+        .mode-group,
+        .seg {
+          width: 100%;
+        }
+        .seg button {
+          flex: 1;
+        }
+        /* 가게 목록은 2열 그리드, 숏폼 피드는 가로 스크롤 유지 */
+        .feed-grid {
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+        }
+        #feed {
+          grid-auto-columns: minmax(200px, 72vw);
+        }
+        .card .thumb {
+          max-height: 250px;
+        }
+        .card .thumb .emoji {
+          font-size: 36px;
+        }
+        .card .body {
+          padding: 10px;
+          gap: 6px;
+        }
+        .card .menu {
+          font-size: 13px;
+        }
+        .card .body {
+          padding: 10px;
+          gap: 6px;
+        }
+        .section-head .local-date {
+          margin-left: 0;
+        }
+        .kv {
+          grid-template-columns: 88px 1fr;
+        }
+
+        /* 모바일 헤더: 항목이 많아 한 줄에 다 들어가지 않는다.
+           로고 + 언어선택기를 첫 줄, 동작 버튼을 둘째 줄로 정리한다. */
+        .topbar {
+          height: auto;
+          flex-wrap: wrap;
+          padding: 8px 12px;
+          gap: 6px 8px;
+        }
+        .brand {
+          font-size: 16px;
+        }
+        /* i18n.js 가 <body> 맨 앞에 끼워 넣는 언어 선택기 때문에 로고가 밀렸다.
+           순서를 명시해 첫 줄을 [로고][UI mock][언어] 로 고정한다. */
+        .topbar > .brand {
+          order: 0;
+          margin-right: auto;
+        }
+        .topbar > .lang-switcher-wrap {
+          order: 1;
+          margin-left: 0;
+        }
+        .topbar > .mock-tag-top {
+          order: 2;
+        }
+        /* 스크린리더용 스팬은 flex 아이템이 되면 안 된다.
+           (order:0 으로 두었더니 로고 자리로 가서 글자가 겹쳤다.) */
+        .topbar > .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip-path: inset(50%);
+          white-space: nowrap;
+          flex: 0 0 0;
+        }
+        /* 두 번째 줄 시작 */
+        .topbar > .spacer {
+          display: block;
+          flex-basis: 100%;
+          height: 0;
+          margin: 0;
+          order: 3;
+        }
+        .topbar > .btn {
+          order: 4;
+        }
+        .topbar > .back {
+          order: 4;
+          margin-left: auto;
+        }
+        .topbar .btn {
+          height: 32px;
+          padding: 0 10px;
+          font-size: 12.5px;
+        }
+        .topbar .back {
+          font-size: 12px;
+        }
+
+        /* the strip scrolls horizontally; keep its overflow contained */
+        .strip {
+          max-width: 100%;
+        }
+
+        /* 모바일은 고지 문구가 길어 3줄이 된다. 본문 공간을 지키기 위해 짧게 접는다. */
+        .mock-banner {
+          padding: 8px 12px;
+          font-size: 11.5px;
+          line-height: 1.45;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 헤더 + 더미 고지를 하나의 sticky 묶음으로 (두 줄 헤더에서 겹침 방지) -->
+    <div class="sticky-top">
+    <header class="topbar">
+      <a class="brand" href="./index.html">golive<span>.wiki</span></a>
+      <span class="badge mock-tag-top" data-i18n="bn_ui_mock">UI mock</span>
+      <div class="spacer"></div>
+      <button type="button" class="btn btn-ghost" id="myOrdersBtn" data-i18n="bn_my_orders">내 예약</button>
+      <button type="button" class="btn btn-ghost" id="sellerOrdersBtn" data-i18n="bn_seller_orders">판매자</button>
+      <a
+        class="back"
+        href="./screens-04-dashboard.html"
+        data-i18n="bn_back_dashboard"
+        >← 대시보드</a
+      >
+    </header>
+
+    <div class="mock-banner" role="note">
+      <span aria-hidden="true">⚠️</span>
+      <p data-i18n="bn_mock_notice">
+        <strong>예시 화면(더미 데이터):</strong> 이 페이지는 1단계 UI
+        시안입니다. 실제 예약이 생성되지 않고 결제·저장·판매자 전송도 없습니다.
+        가게·가격·시간은 모두 예시입니다.
+      </p>
+    </div>
+    </div>
+
+    <main class="wrap">
+      <section class="loc-bar" aria-labelledby="pageTitle">
+        <h1 id="pageTitle" class="sr-only" data-i18n="bn_page_title">
+          반찬 공동구매 · 글로벌 손맛 지도
+        </h1>
+
+        <div class="field">
+          <label for="countrySel" data-i18n="bn_country">국가</label>
+          <select id="countrySel"></select>
+        </div>
+        <div class="field">
+          <label for="citySel" data-i18n="bn_city">도시</label>
+          <select id="citySel"></select>
+        </div>
+
+        <div class="field">
+          <label data-i18n="bn_view">보기</label>
+          <div class="mode-group">
+            <div class="seg" role="tablist" aria-label="view mode">
+              <button
+                type="button"
+                role="tab"
+                id="tabMap"
+                aria-selected="true"
+                data-mode="map"
+                data-i18n="bn_view_map"
+              >
+                지도
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id="tabFeed"
+                aria-selected="false"
+                data-mode="feed"
+                tabindex="-1"
+                data-i18n="bn_view_feed"
+              >
+                숏폼
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="bn_geo">위치</label>
+          <button
+            type="button"
+            class="btn"
+            id="geoBtn"
+            aria-describedby="geoNote"
+            data-i18n="bn_geo_btn"
+          >
+            주변 찾기
+          </button>
+        </div>
+
+        <p class="geo-note" id="geoNote" role="status" data-i18n="bn_geo_idle">
+          위치 없이 국가·도시를 직접 선택할 수 있습니다. GPS는 “주변 찾기”를
+          눌렀을 때만 요청합니다.
+        </p>
+      </section>
+
+      <nav class="chips" id="chips" aria-label="categories"></nav>
+
+      <section id="mapPanel" class="section" aria-labelledby="mapTitle">
+        <div class="section-head">
+          <h2 id="mapTitle" data-i18n="bn_map_title">도시별 지도</h2>
+          <span class="sub" data-i18n="bn_map_sub"
+            >승인 판매자 공개 영업장만 표시 (예시)</span
+          >
+          <span class="local-date" data-local-date></span>
+        </div>
+        <div class="map" id="map" role="group" aria-label="map preview">
+          <div class="map-empty" id="mapEmpty" hidden>
+            <strong data-i18n="bn_empty_title">이 도시는 준비 중입니다</strong>
+            <span data-i18n="bn_empty_body"
+              >승인된 판매자가 아직 없습니다. 가짜 가게나 실시간 주문 수로
+              채우지 않습니다.</span
+            >
+          </div>
+          <div class="map-info" id="mapInfo" hidden></div>
+        </div>
+      </section>
+
+      <section
+        id="feedPanel"
+        class="section"
+        aria-labelledby="feedTitle"
+        hidden
+      >
+        <div class="section-head">
+          <h2 id="feedTitle" data-i18n="bn_feed_title">숏폼 피드</h2>
+          <span class="sub" data-i18n="bn_feed_sub"
+            >9:16 세로 영상 카드 · 영상 재생만으로 예약되지 않음</span
+          >
+          <span class="local-date" data-local-date></span>
+        </div>
+        <div class="feed" id="feed"></div>
+      </section>
+
+      <section class="section" aria-labelledby="chickenTitle">
+        <div class="section-head">
+          <h2 id="chickenTitle" data-i18n="bn_chicken_title">오늘의 치킨</h2>
+          <span class="sub" data-i18n="bn_chicken_sub"
+            >판매자가 당일 등록한 메뉴만 · 매일 자동 판매 아님</span
+          >
+          <span class="local-date" data-local-date></span>
+        </div>
+        <div class="strip" id="chickenStrip"></div>
+      </section>
+
+      <section class="section" aria-labelledby="shopsTitle">
+        <div class="section-head">
+          <h2 id="shopsTitle" data-i18n="bn_shops_title">예약 가능한 가게</h2>
+          <span class="sub" id="shopsSub"></span>
+        </div>
+        <div class="empty" id="emptyState" hidden>
+          <p class="big" data-i18n="bn_empty_title">이 도시는 준비 중입니다</p>
+          <p data-i18n="bn_empty_body">
+            승인된 판매자가 아직 없습니다. 가짜 가게나 실시간 주문 수로 채우지
+            않습니다.
+          </p>
+        </div>
+        <div class="feed-grid" id="shopList" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <dialog class="sheet" id="dishDialog" aria-labelledby="dishTitle">
+      <div class="sheet-head">
+        <h3 id="dishTitle">—</h3>
+        <button
+          type="button"
+          class="btn btn-ghost"
+          id="closeDialog"
+          data-i18n="bn_close"
+        >
+          닫기
+        </button>
+      </div>
+      <div class="sheet-body">
+        <div class="bi-hero" id="dishHero" aria-hidden="true">🍱</div>
+        <div class="field-inline">
+          <span class="lbl inline" data-i18n="bn_qty">수량</span>
+          <div class="qty">
+            <button type="button" id="qtyMinus" aria-label="minus">−</button>
+            <output id="qtyValue" for="qtyMinus qtyPlus">1</output>
+            <button type="button" id="qtyPlus" aria-label="plus">+</button>
+          </div>
+        </div>
+        <div>
+          <label class="lbl" for="pickupSel" data-i18n="bn_pickup"
+            >픽업 시간</label
+          >
+          <select id="pickupSel"></select>
+        </div>
+        <dl class="kv" id="dishFacts"></dl>
+        <p class="qr-note" data-i18n="bn_pay_note">
+          온라인 결제·선입금 없음. 가게에서 수령 시 현장 결제합니다. 이 화면은
+          시안이며 예약이 저장되지 않습니다.
+        </p>
+        <p class="demo-note" data-i18n="bn_disclaimer"></p>
+
+        <!-- 2단계: 실제 예약 입력. 서버 성공 전에는 성공을 표시하지 않는다. -->
+        <div>
+          <label class="lbl" for="bookingContact" data-i18n="bn_contact">픽업 연락처</label>
+          <input
+            id="bookingContact"
+            type="tel"
+            autocomplete="tel"
+            inputmode="tel"
+            maxlength="120"
+            placeholder="010-0000-0000"
+            aria-describedby="bookingStatus"
+          />
+          <p class="contact-note" data-i18n="bn_contact_note">
+            픽업 안내에만 쓰고 지도·공개 목록에 노출하지 않습니다.
+          </p>
+        </div>
+        <p class="booking-status" id="bookingStatus" role="status" aria-live="assertive"></p>
+      </div>
+      <div class="sheet-foot">
+        <button
+          type="button"
+          class="btn"
+          id="cancelDialog"
+          data-i18n="bn_close"
+        >
+          닫기
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          id="confirmMock"
+          data-i18n="bn_confirm"
+        >
+          예약하기
+        </button>
+      </div>
+    </dialog>
+
+    <!-- 내 예약 / 판매자 예약 목록 -->
+    <dialog class="sheet" id="ordersDialog" aria-labelledby="ordersTitle">
+      <div class="sheet-head">
+        <h3 id="ordersTitle" data-i18n="bn_my_orders">내 예약</h3>
+        <button type="button" class="btn btn-ghost" id="closeOrders" data-i18n="bn_close">닫기</button>
+      </div>
+      <div class="sheet-body">
+        <div class="order-list" id="ordersList" aria-live="polite"></div>
+      </div>
+    </dialog>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <script src="./js/banchan-api.js" defer></script>
+    <script src="./js/banchan-mock.js" defer></script>
+  </body>
+</html>
