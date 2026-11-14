@@ -101,6 +101,8 @@ jobs:
       PGPASSWORD: gig_admin
       # tests connect here; never touches any existing database
       BANCHAN_TEST_DB: banchan_test
+      # No docker inside the runner; the service container is reached over TCP.
+      PG_DIRECT: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -141,16 +143,9 @@ jobs:
           done
           echo "migrations applied"
 
-      # The RLS/RPC script lives in the golivewiki-ui working copy today, so it is
-      # not in the repo yet. Skip loudly rather than fail on a missing file; the job
-      # starts covering it as soon as the tests are committed here.
       - name: RLS / RPC checks
         run: |
           set -e
-          if [ ! -f tests/banchan-db-checks.sql ]; then
-            echo "::warning::tests/banchan-db-checks.sql is not committed yet - RLS checks skipped"
-            exit 0
-          fi
           psql -v ON_ERROR_STOP=1 -d banchan_test -f tests/banchan-db-checks.sql 2>&1 | tee /tmp/db.log
           if grep -q '^FAIL' /tmp/db.log; then echo "::error::db checks reported FAIL"; exit 1; fi
           if grep '^ERROR' /tmp/db.log | grep -qv 'DEADLINE_PASSED'; then
@@ -158,14 +153,8 @@ jobs:
           fi
           echo "db checks OK"
 
-      - name: Concurrency check
-        run: |
-          set -e
-          if [ ! -f tests/banchan-concurrency.mjs ]; then
-            echo "::warning::tests/banchan-concurrency.mjs is not committed yet - skipped"
-            exit 0
-          fi
-          node tests/banchan-concurrency.mjs
+      - name: Concurrency check (two sessions race the last unit)
+        run: node tests/banchan-concurrency.mjs
 
   # ---------------------------------------------------------------------------
   # Not enabled yet: the jsdom/Chromium UI tests and the build-pipeline test live
