@@ -45,3 +45,16 @@ dist/
 # Local backups made before edits (*.bak, *.bak-20261022)
 *.bak
 *.bak-*
+
+# CRA build residue from an unrelated "Uber Dashboard" app that was left in the
+# working tree. The bundle in static/ contains that app, not golive.wiki. These
+# files are untracked and must stay that way: a static deploy would otherwise
+# publish a dashboard app under this domain. Vite output goes to dist/ (ignored
+# above), so nothing here belongs to this project.
+/static/
+/asset-manifest.json
+/manifest.json
+/favicon.ico
+/logo192.png
+/logo512.png
+/robots.txt
