@@ -1,0 +1,189 @@
+name: CI
+
+# Build + test only. This workflow does NOT deploy.
+#
+# Production routing happens outside this repository (Charon ->
+# host.docker.internal:7681, per README "Source of truth and deployment"). A runner
+# has no deploy target, and a local vite build alone does not publish to the live
+# app, so deploying from CI here would be guesswork.
+#
+# Package manager is pnpm: pnpm-lock.yaml is newer than package-lock.json and the
+# repo is developed with pnpm.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build + build-output checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck API server
+        run: |
+          if [ -f server/package.json ]; then
+            (cd server && pnpm install --frozen-lockfile 2>/dev/null || pnpm install; pnpm run typecheck)
+          fi
+
+      - name: Build
+        run: pnpm run build
+
+      # The failure this guards against: vite emits banchan.html but does not copy
+      # its plain <script src> files, and still prints "built". The page then 404s
+      # at runtime and renders zero cards. Assert the artifact, not the log.
+      - name: Assert build outputs
+        run: |
+          set -e
+          fail() { echo "::error::$1"; exit 1; }
+          test -s dist/index.html         || fail "missing dist/index.html"
+          test -s dist/banchan.html       || fail "missing dist/banchan.html (registered in vite.config input?)"
+          test -s dist/js/banchan-api.js  || fail "missing dist/js/banchan-api.js (postbuild must copy it)"
+          test -s dist/js/banchan-mock.js || fail "missing dist/js/banchan-mock.js (postbuild must copy it)"
+          test -s dist/styles/i18n.js     || fail "missing dist/styles/i18n.js"
+          echo "build outputs OK"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+          if-no-files-found: error
+
+  db:
+    name: migrations + RLS + concurrency
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        # Same major as the dev container image (golivewiki-postgres:16-3.4);
+        # postgis because the migration uses geography columns.
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: gig_admin
+          POSTGRES_PASSWORD: gig_admin
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: gig_admin
+      PGPASSWORD: gig_admin
+      # tests connect here; never touches any existing database
+      BANCHAN_TEST_DB: banchan_test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create + migrate throwaway banchan_test database
+        run: |
+          set -e
+          psql -v ON_ERROR_STOP=1 -d postgres -c "DROP DATABASE IF EXISTS banchan_test;"
+          psql -v ON_ERROR_STOP=1 -d postgres -c "CREATE DATABASE banchan_test;"
+          psql -v ON_ERROR_STOP=1 -d postgres <<'SQL'
+          DO $$ BEGIN CREATE ROLE anon NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          DO $$ BEGIN CREATE ROLE authenticated NOLOGIN; EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+          SQL
+          # Minimal stand-in for Supabase's auth schema + roles
+          psql -v ON_ERROR_STOP=1 -d banchan_test <<'SQL'
+          CREATE SCHEMA auth;
+          CREATE TABLE auth.users (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), email text UNIQUE);
+          CREATE EXTENSION IF NOT EXISTS pgcrypto;
+          CREATE EXTENSION IF NOT EXISTS postgis;
+          GRANT USAGE ON SCHEMA auth TO anon, authenticated;
+          GRANT SELECT ON auth.users TO authenticated;
+          SQL
+          for f in supabase/migrations/0005_banchan_market.sql \
+                   supabase/migrations/0006_banchan_booking_rpc.sql; do
+            echo "== $f"
+            psql -v ON_ERROR_STOP=1 -q -d banchan_test -f "$f"
+          done
+          echo "migrations applied"
+
+      # The RLS/RPC script lives in the golivewiki-ui working copy today, so it is
+      # not in the repo yet. Skip loudly rather than fail on a missing file; the job
+      # starts covering it as soon as the tests are committed here.
+      - name: RLS / RPC checks
+        run: |
+          set -e
+          if [ ! -f tests/banchan-db-checks.sql ]; then
+            echo "::warning::tests/banchan-db-checks.sql is not committed yet - RLS checks skipped"
+            exit 0
+          fi
+          psql -v ON_ERROR_STOP=1 -d banchan_test -f tests/banchan-db-checks.sql 2>&1 | tee /tmp/db.log
+          if grep -q '^FAIL' /tmp/db.log; then echo "::error::db checks reported FAIL"; exit 1; fi
+          if grep '^ERROR' /tmp/db.log | grep -qv 'DEADLINE_PASSED'; then
+            echo "::error::unexpected database error"; exit 1
+          fi
+          echo "db checks OK"
+
+      - name: Concurrency check
+        run: |
+          set -e
+          if [ ! -f tests/banchan-concurrency.mjs ]; then
+            echo "::warning::tests/banchan-concurrency.mjs is not committed yet - skipped"
+            exit 0
+          fi
+          node tests/banchan-concurrency.mjs
+
+  # ---------------------------------------------------------------------------
+  # Not enabled yet: the jsdom/Chromium UI tests and the build-pipeline test live
+  # in the golivewiki-ui working copy, not in this repository. When committed
+  # (e.g. tests/banchan/), add:
+  #
+  #   ui:
+  #     runs-on: ubuntu-latest
+  #     steps:
+  #       - uses: actions/checkout@v4
+  #       - uses: pnpm/action-setup@v4
+  #         with: { version: 9 }
+  #       - uses: actions/setup-node@v4
+  #         with: { node-version: 20, cache: pnpm }
+  #       - run: pnpm install --frozen-lockfile && pnpm add -D patchright jsdom
+  #       - run: npx patchright install --with-deps chromium
+  #       - env:
+  #           PATCHRIGHT_ROOT: ${{ github.workspace }}/package.json
+  #           REPO_PKG: ${{ github.workspace }}/package.json
+  #         run: node tests/banchan/banchan-mock.test.mjs
+  # ---------------------------------------------------------------------------
