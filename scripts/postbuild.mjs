@@ -56,3 +56,23 @@ for (const file of files) {
 
 const totalSavings = ((1 - totalAfter / totalBefore) * 100).toFixed(1);
 console.log(`\n✅ postbuild complete: ${(totalBefore/1024).toFixed(1)}KB → ${(totalAfter/1024).toFixed(1)}KB (${totalSavings}% smaller)`);
+
+// --- banchan: page-scoped scripts -------------------------------------------
+// banchan.html references ./js/banchan-api.js and ./js/banchan-mock.js with plain
+// <script src> (no type="module"), so Vite emits the HTML but never copies the
+// scripts. Without this the built page loads two 404s and renders zero cards.
+// Only these two files are copied — the rest of js/ belongs to other pages.
+const BANCHAN_SCRIPTS = ["banchan-api.js", "banchan-mock.js"];
+const JS_SRC = path.join(ROOT, "js");
+const JS_DEST = path.join(ROOT, "dist", "js");
+fs.mkdirSync(JS_DEST, { recursive: true });
+for (const file of BANCHAN_SCRIPTS) {
+  const srcPath = path.join(JS_SRC, file);
+  const destPath = path.join(JS_DEST, file);
+  if (!fs.existsSync(srcPath)) {
+    console.warn(`⚠️  missing js/${file}, banchan.html will 404 on it`);
+    continue;
+  }
+  fs.copyFileSync(srcPath, destPath);
+  console.log(`📦 copied js/${file}`);
+}
