@@ -379,16 +379,16 @@
     <!-- 1. Left List -->
     <div class="task-list-panel">
       <div class="filter-bar">
-        <div class="filter-pill active" data-i18n="filter_all">전체 (4)</div>
-        <div class="filter-pill" data-i18n="filter_radius">반경 3km</div>
-        <div class="filter-pill" data-i18n="filter_cleaning">청소</div>
-        <div class="filter-pill" data-i18n="filter_moving">이사/용달</div>
-        <div class="filter-pill" data-i18n="filter_assembly">조립</div>
+        <div class="filter-pill active" data-filter="all" role="button" tabindex="0" aria-pressed="true" data-i18n="filter_all">전체 (4)</div>
+        <div class="filter-pill" data-filter="radius" role="button" tabindex="0" aria-pressed="false" data-i18n="filter_radius">반경 3km</div>
+        <div class="filter-pill" data-filter="cleaning" role="button" tabindex="0" aria-pressed="false" data-i18n="filter_cleaning">청소</div>
+        <div class="filter-pill" data-filter="moving" role="button" tabindex="0" aria-pressed="false" data-i18n="filter_moving">이사/용달</div>
+        <div class="filter-pill" data-filter="assembly" role="button" tabindex="0" aria-pressed="false" data-i18n="filter_assembly">조립</div>
       </div>
 
       <div class="task-scroll">
         <!-- Task Item 1 -->
-        <div class="browse-card active" onclick="focusTask(37.5088, 127.0398, '논현동 원룸 입주 청소')">
+        <div class="browse-card active" data-cat="cleaning" data-dist="1.4" onclick="focusTask(37.5088, 127.0398, '논현동 원룸 입주 청소')">
           <div class="browse-card-top">
             <div class="browse-card-title" data-i18n="task_1_title">강남구 논현동 원룸 입주 청소 (10평형)</div>
             <div class="browse-card-price">₩85,000</div>
@@ -404,7 +404,7 @@
         </div>
 
         <!-- Task Item 2 -->
-        <div class="browse-card" onclick="focusTask(37.5028, 127.0125, '이케아 3단 서랍장 조립')">
+        <div class="browse-card" data-cat="assembly" data-dist="2.1" onclick="focusTask(37.5028, 127.0125, '이케아 3단 서랍장 조립')">
           <div class="browse-card-top">
             <div class="browse-card-title" data-i18n="task_2_title">이케아 3단 서랍장 & 책장 방문 조립</div>
             <div class="browse-card-price">₩50,000</div>
@@ -420,7 +420,7 @@
         </div>
 
         <!-- Task Item 3 -->
-        <div class="browse-card" onclick="focusTask(37.5006, 127.0364, '소형 1톤 트럭 용달')">
+        <div class="browse-card" data-cat="moving" data-dist="3.5" onclick="focusTask(37.5006, 127.0364, '소형 1톤 트럭 용달')">
           <div class="browse-card-top">
             <div class="browse-card-title" data-i18n="task_3_title">소형 1톤 트럭 용달 (매트리스 운반)</div>
             <div class="browse-card-price">₩90,000</div>
@@ -436,7 +436,7 @@
         </div>
 
         <!-- Task Item 4 -->
-        <div class="browse-card" onclick="focusTask(37.5185, 127.0515, '삼성동 오피스 조명 교체')">
+        <div class="browse-card" data-cat="cleaning" data-dist="2.8" onclick="focusTask(37.5185, 127.0515, '삼성동 오피스 조명 교체')">
           <div class="browse-card-top">
             <div class="browse-card-title" data-i18n="task_4_title">삼성동 소형 사무실 LED 레일 조명 교체</div>
             <div class="browse-card-price">₩65,000</div>
@@ -578,6 +578,102 @@
     if (markers[title]) {
       setTimeout(() => markers[title].openPopup(), 1200);
     }
+  }
+
+  // Filter bar — previously wired to nothing, so "청소 / 이사·용달 / 조립 /
+  // 반경 3km" were dead UI. Now filters both the list cards and map pins.
+  const CARD_TO_TASK_TITLE = {
+    1: '논현동 원룸 입주 청소',
+    2: '이케아 3단 서랍장 조립',
+    3: '소형 1톤 트럭 용달',
+    4: '삼성동 오피스 조명 교체'
+  };
+
+  function applyFilter(filter) {
+    const cards = Array.from(document.querySelectorAll('.browse-card'));
+    let visible = 0;
+
+    cards.forEach((card, i) => {
+      const cat = card.dataset.cat || 'all';
+      const dist = parseFloat(card.dataset.dist || '0');
+      let show = true;
+
+      if (filter === 'radius') show = dist > 0 && dist <= 3;
+      else if (filter !== 'all') show = cat === filter;
+
+      card.hidden = !show;
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+
+      const title = CARD_TO_TASK_TITLE[i + 1];
+      const marker = title && markers[title];
+      if (marker && map.hasLayer(marker)) {
+        if (show) map.addLayer(marker);
+      } else if (marker && show) {
+        marker.addTo(map);
+      }
+      if (marker && !show) map.removeLayer(marker);
+    });
+
+    // Empty state so a filter with no matches explains itself
+    let empty = document.getElementById('filter-empty');
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.id = 'filter-empty';
+      empty.style.cssText =
+        'padding:32px 20px;text-align:center;color:var(--at-muted);font-size:14px;';
+      empty.textContent = '이 필터에 맞는 의뢰가 없습니다. 다른 카테고리를 선택해 보세요.';
+      document.querySelector('.task-scroll')?.appendChild(empty);
+    }
+    empty.hidden = visible > 0;
+
+    // Grid is a 4-card demo dataset; bump this label when the data grows.
+    const allPill = document.querySelector('.filter-pill[data-filter="all"]');
+    if (allPill) allPill.textContent = `전체 (${cards.length})`;
+
+    return visible;
+  }
+
+  function initFilters() {
+    const pills = Array.from(document.querySelectorAll('.filter-pill[data-filter]'));
+    // Deep link from the landing page category pills (?cat=cleaning).
+    // Categories with no pill on this screen just land on "전체".
+    const requested = new URLSearchParams(location.search).get('cat');
+    const preset = requested && pills.some((p) => p.dataset.filter === requested) ? requested : null;
+    pills.forEach((pill) => {
+      const activate = () => {
+        pills.forEach((p) => {
+          const on = p === pill;
+          p.classList.toggle('active', on);
+          p.setAttribute('aria-pressed', String(on));
+        });
+        applyFilter(pill.dataset.filter);
+      };
+      pill.addEventListener('click', activate);
+      pill.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          activate();
+        }
+      });
+    });
+    if (preset) {
+      const target = pills.find((p) => p.dataset.filter === preset);
+      pills.forEach((p) => {
+        const on = p === target;
+        p.classList.toggle('active', on);
+        p.setAttribute('aria-pressed', String(on));
+      });
+      applyFilter(preset);
+    } else {
+      applyFilter('all');
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initFilters);
+  } else {
+    initFilters();
   }
 </script>
 

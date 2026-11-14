@@ -309,6 +309,9 @@
           <label data-i18n="label_title">작업 제목</label>
           <input
             type="text"
+            id="gig-title"
+            required
+            aria-required="true"
             data-i18n-ph="ph_title"
             placeholder="예: 논현동 원룸 입주 청소 및 창틀 먼지 제거"
           />
@@ -339,6 +342,9 @@
           <label data-i18n="label_location">작업 장소 (주소 입력 시 PostGIS 자동 좌표 변환)</label>
           <input
             type="text"
+            id="gig-location"
+            required
+            aria-required="true"
             data-i18n-ph="ph_location"
             placeholder="예: 서울특별시 강남구 테헤란로 152"
           />
@@ -400,13 +406,78 @@
           >
           <a
             href="screens-06-task-detail.html"
+            id="btn-submit-gig"
             class="btn-submit"
             data-i18n="btn_free_post"
             >무료로 일 등록하기</a
           >
+          <p
+            id="gig-form-error"
+            role="alert"
+            aria-live="assertive"
+            hidden
+            style="margin:12px 0 0;font-size:13px;color:#fca5a5;text-align:right;"
+          >
+            작업 제목과 장소를 입력해 주세요.
+          </p>
         </div>
       </div>
     </div>
+  <!-- Submit validation. Previously the CTA was a plain <a> straight to the
+       task-detail page, so an empty form "posted" a gig with blank title and
+       address and looked like a success. -->
+<script>
+  (function () {
+    const submit = document.getElementById('btn-submit-gig');
+    if (!submit) return;
+    const title = document.getElementById('gig-title');
+    const location = document.getElementById('gig-location');
+    const error = document.getElementById('gig-form-error');
+
+    function clearInvalid() {
+      [title, location].forEach(function (el) {
+        if (!el) return;
+        el.removeAttribute('aria-invalid');
+        el.style.borderColor = '';
+      });
+      if (error) error.hidden = true;
+    }
+
+    function markInvalid(el) {
+      if (!el) return;
+      el.setAttribute('aria-invalid', 'true');
+      el.style.borderColor = '#fca5a5';
+    }
+
+    submit.addEventListener('click', function (e) {
+      const missingTitle = !title || !title.value.trim();
+      const missingLocation = !location || !location.value.trim();
+      if (!missingTitle && !missingLocation) {
+        clearInvalid();
+        return; // let the link navigate
+      }
+      e.preventDefault();
+      clearInvalid();
+      if (missingTitle) markInvalid(title);
+      if (missingLocation) markInvalid(location);
+      if (error) {
+        error.textContent =
+          missingTitle && missingLocation
+            ? '작업 제목과 작업 장소를 입력해 주세요.'
+            : missingTitle
+              ? '작업 제목을 입력해 주세요.'
+              : '작업 장소를 입력해 주세요.';
+        error.hidden = false;
+      }
+      (missingTitle ? title : location).focus();
+    });
+
+    [title, location].forEach(function (el) {
+      if (el) el.addEventListener('input', clearInvalid);
+    });
+  })();
+</script>
+
   <!-- Language Switcher Inline Init (matches index.html) -->
 <script>
   function toggleLangDropdown() {

@@ -626,10 +626,33 @@
     </div>
 
     <script>
+      // Mock API probe. Previously a bare alert(): the result vanished as soon
+      // as it was dismissed and nothing was left on the page to inspect, so the
+      // button looked dead. Now the result is written into a persistent,
+      // screen-reader-announced panel under the table.
       function runTest(endpoint) {
-        alert(
-          `[API TEST] ${endpoint} 모의 호출 성공!\n응답: 200 OK (Latency: 14ms)`,
-        );
+        const latency = 8 + Math.floor(Math.random() * 20);
+        let panel = document.getElementById('api-test-result');
+        if (!panel) {
+          panel = document.createElement('div');
+          panel.id = 'api-test-result';
+          panel.setAttribute('role', 'status');
+          panel.setAttribute('aria-live', 'polite');
+          panel.style.cssText =
+            'margin-top:16px;padding:14px 16px;border-radius:12px;' +
+            'border:1px solid rgba(20,235,192,0.35);background:rgba(20,235,192,0.08);' +
+            'font-family:\'JetBrains Mono\',monospace;font-size:13px;line-height:1.6;' +
+            'color:var(--at-text,#e4e4e7);white-space:pre-wrap;';
+          (document.querySelector('.table-wrap') ||
+            document.querySelector('table')?.parentElement ||
+            document.body).after(panel);
+        }
+        const stamp = new Date().toLocaleTimeString();
+        panel.textContent =
+          `[${stamp}] ${endpoint}` +
+          `\n→ 200 OK · ${latency}ms · mock response (no backend call made)`;
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        return { endpoint, status: 200, latency };
       }
     </script>
   <!-- Language Switcher Inline Init (matches index.html) -->
