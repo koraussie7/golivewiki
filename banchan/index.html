@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>반찬 마켓 — golive.wiki</title>
+    <meta name="description" content="동네 반찬·치킨 픽업 마켓. 예약하고 매장에서 받아가세요." />
+    <link rel="canonical" href="https://golive.wiki/banchan" />
+    <!--
+      /banchan 은 nginx 의 try_files 폴백(index.html)에 기대지 않기 위한 실제 파일이다.
+      정적 호스트가 두 가지 방식으로 해석할 수 있어 둘 다 처리한다:
+        - 디렉터리 인덱스  →  dir/index.html 이 그대로 열린다
+        - 확장자 숨김      →  /banchan 이 banchan.html 로 매핑된다
+      그래서 meta refresh 와 스크립트로 한 번 더 넘긴다.
+    -->
+    <meta http-equiv="refresh" content="0; url=/banchan.html" />
+    <script>
+      (function () {
+        var q = window.location.search || "";
+        window.location.replace("/banchan.html" + q);
+      })();
+    </script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #09090b;
+        color: #e5e7eb;
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+      }
+      main {
+        height: 100%;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        padding: 24px;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 0;
+        color: #9ca3af;
+        font-size: 15px;
+      }
+      a {
+        color: #14ebc0;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div>
+        <h1>🍱 반찬 마켓</h1>
+        <p>이동 중입니다… <a href="/banchan.html">여기를 눌러도 됩니다</a></p>
+      </div>
+    </main>
+  </body>
+</html>

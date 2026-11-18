@@ -22,6 +22,12 @@
 #   ./scripts/deploy.sh --no-build   # 이미 빌드된 dist/ 로 배포
 #   ./scripts/deploy.sh --dry-run    # 무엇이 바뀔지 확인만
 #
+# 반찬 API (Supabase) 연동 — 2c 단계
+#   SUPABASE_URL=https://xxxx.supabase.co \
+#   SUPABASE_ANON_KEY=eyJhbGci... ./scripts/deploy.sh
+#   둘 다 있으면 dist/banchan.html 의 supabase-url / supabase-anon-key meta 를 채운다.
+#   비우면 mock 모드로 배포. service_role 키는 절대 넣지 않는다.
+#
 set -euo pipefail
 
 HOST="${DEPLOY_HOST:-110}"                  # ~/.ssh/config 의 별칭
@@ -71,6 +77,67 @@ for f in banchan.html js/banchan-api.js js/banchan-mock.js index.html; do
   [ -f "$DIST/$f" ] || { echo "ERROR: dist/$f 가 없음 — 빌드 실패" >&2; exit 1; }
 done
 echo "OK — dist 산출물 확인 (banchan.html $(wc -c < "$DIST/banchan.html") bytes)"
+
+# ---------------------------------------------------------------------------
+# 2b) 지도 키 주입 — dist/ 산출물에만 넣는다. 저장소 파일은 건드리지 않는다.
+#
+# 원칙(OPERATIONS.md §4): 키를 저장소에 커밋하지 않는다. banchan.html 의
+# meta 는 content="" 로 두고, 배포 직전에 산출물에만 주입한다.
+#   MAPTILER_KEY=xxxx ./scripts/deploy.sh
+#   (또는 shell 설정 파일에서 export MAPTILER_KEY=...)
+# 키가 없으면 지도는 꺼진 채(로컬 미리보기) 배포된다 — 의도된 기본값이다.
+# ---------------------------------------------------------------------------
+if [ -n "${MAPTILER_KEY:-}" ]; then
+  say "2b/6 지도 키 주입 (dist 산출물에만)"
+  python3 - "$DIST/banchan.html" "$MAPTILER_KEY" <<'PY'
+import sys
+path, key = sys.argv[1], sys.argv[2]
+with open(path, encoding="utf-8") as fh:
+    html = fh.read()
+old = '<meta name="maptiler-key" content="" />'
+new = '<meta name="maptiler-key" content="%s" />' % key
+if old not in html:
+    sys.exit("ERROR: 빈 maptiler-key meta 를 찾지 못함 (이미 채워졌거나 형식이 바뀜)")
+with open(path, "w", encoding="utf-8") as fh:
+    fh.write(html.replace(old, new, 1))
+print("injected: %d chars key" % len(key))
+PY
+  echo "OK — dist/banchan.html 에 키 주입 (저장소 banchan.html 은 빈 값 유지)"
+else
+  say "2b/6 지도 키 없음 — 지도 OFF 로 배포 (미리보기 핀만 표시)"
+fi
+
+# ---------------------------------------------------------------------------
+# 2c) Supabase URL/anon key 주입 — dist 산출물에만 넣는다
+# ---------------------------------------------------------------------------
+if [ -n "${SUPABASE_URL:-}" ] && [ -n "${SUPABASE_ANON_KEY:-}" ]; then
+  say "2c/6 Supabase URL/anon key 주입 (dist 산출물에만)"
+  python3 - "$DIST/banchan.html" "$SUPABASE_URL" "$SUPABASE_ANON_KEY" <<'PY'
+import sys
+path, url, key = sys.argv[1], sys.argv[2].strip(), sys.argv[3].strip()
+with open(path, encoding="utf-8") as fh:
+    html = fh.read()
+pairs = [
+    ('<meta name="supabase-url" content="" />',
+     '<meta name="supabase-url" content="%s" />' % url),
+    ('<meta name="supabase-anon-key" content="" />',
+     '<meta name="supabase-anon-key" content="%s" />' % key),
+]
+for old, new in pairs:
+    if old not in html:
+        sys.exit("ERROR: 빈 meta 를 찾지 못함: %s" % old[:40])
+    html = html.replace(old, new, 1)
+with open(path, "w", encoding="utf-8") as fh:
+    fh.write(html)
+print("injected: url=%s anon-key=%d chars" % (url, len(key)))
+PY
+  echo "OK — dist/banchan.html 에 Supabase 설정 주입 (저장소 meta 는 빈 값 유지)"
+elif [ -n "${SUPABASE_URL:-}" ] || [ -n "${SUPABASE_ANON_KEY:-}" ]; then
+  echo "ERROR: SUPABASE_URL 과 SUPABASE_ANON_KEY 는 함께 있어야 함" >&2
+  exit 1
+else
+  say "2c/6 Supabase 설정 없음 — 반찬 API 는 mock 모드로 배포"
+fi
 
 # ---------------------------------------------------------------------------
 # 3) 보존 목록 — dist/ 에 없는 서버 파일. 삭제 금지 대상.
@@ -141,6 +208,28 @@ for a in js/banchan-api.js js/banchan-mock.js; do
     FAIL=$((FAIL+1))
   fi
 done
+
+# 지도 키를 주입했다면 라이브 meta 에 반영됐는지 확인한다.
+# (타일이 실제로 200 인지는 오리진 제한이 있어 브라우저 검사가 필요하다.)
+if [ -n "${MAPTILER_KEY:-}" ]; then
+  served="$(curl -s -m 10 https://golive.wiki/banchan.html \
+    | grep -o 'name="maptiler-key" content="[^"]*"' | head -1)"
+  if printf '%s' "$served" | grep -q 'content=""'; then
+    printf '  \033[31mFAIL\033[0m   %-28s meta 가 비어 있음 (키 주입 안 됨)\n' "maptiler-key"
+    FAIL=$((FAIL+1))
+  else
+    printf '  \033[32mOK\033[0m   %-28s meta 에 키 반영\n' "maptiler-key"
+    tile="$(curl -s -o /dev/null -m 10 -w '%{http_code}' \
+      -H 'Origin: https://golive.wiki' \
+      "https://api.maptiler.com/maps/streets/13/7010/3147.png?key=$MAPTILER_KEY")"
+    if [ "$tile" = "200" ]; then
+      printf '  \033[32mOK\033[0m   %-28s HTTP 200\n' "maptiler tile"
+    else
+      printf '  \033[31mFAIL\033[0m   %-28s HTTP %s\n' "maptiler tile" "$tile"
+      FAIL=$((FAIL+1))
+    fi
+  fi
+fi
 
 if [ "$FAIL" -gt 0 ]; then
   echo

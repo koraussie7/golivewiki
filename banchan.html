@@ -3,6 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- 반찬 API 가 live 모드로 동작하려면 배포 파이프라인이
+         scripts/deploy.sh 의 2c 단계에서 이 두 meta 를 dist 산출물에만 채운다.
+         저장소 파일은 항상 비워 둔다(OPERATIONS.md §4: 키를 저장소에 두지 않는다). -->
     <meta name="supabase-url" content="" />
     <meta name="supabase-anon-key" content="" />
     <!-- 유효한 지도 키가 확정되면 여기에 넣는다. 현재 키는 403(만료/무효)이라
@@ -119,6 +122,11 @@
         color: var(--at-text-main);
         font-family: "Plus Jakarta Sans", system-ui, sans-serif;
         min-height: 100vh;
+        /* 본문 기본 크기를 한 단계 올린다(15px -> 16.5px). 개별 px 값은 아래에서 함께 올린다. */
+        font-size: 16.5px;
+        line-height: 1.55;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
       }
       a {
         color: inherit;
@@ -199,9 +207,11 @@
       }
 
       .wrap {
-        max-width: 1080px;
+        /* 데스크탑에서 화면 폭을 그대로 쓴다. 아주 넓은 모니터에서만 한 번 더 넓힌다. */
+        width: 100%;
+        max-width: 1680px;
         margin: 0 auto;
-        padding: 16px 16px 80px;
+        padding: 20px clamp(16px, 2.2vw, 40px) 96px;
       }
 
       .loc-bar {
@@ -605,8 +615,8 @@
       /* 가게 목록: 행으로 흐르는 카드 그리드 (가로 스크롤 아님) */
       .feed-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
-        gap: 14px;
+        grid-template-columns: repeat(auto-fill, minmax(264px, 1fr));
+        gap: 18px;
       }
 
       .feed {
@@ -1191,6 +1201,88 @@
         border: 0;
       }
 
+      /* --- 넓은 데스크탑: 화면을 꽉 채우고 글자·카드를 함께 키운다 ------------ */
+      @media (min-width: 1200px) {
+        body {
+          font-size: 17.5px;
+        }
+        .feed-grid {
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 22px;
+        }
+        .topbar {
+          height: 64px;
+          padding: 0 clamp(16px, 2.2vw, 40px);
+        }
+        .brand {
+          font-size: 19px;
+        }
+        .card .thumb {
+          max-height: 420px;
+        }
+      }
+      /* --- 아주 넓은 화면은 카드가 지나치게 커지지 않도록 열 수를 고정 ------- */
+      @media (min-width: 1800px) {
+        .feed-grid {
+          grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        }
+      }
+      /* --- 모바일: 한 손 조작 기준으로 터치 영역과 글자를 키운다 --------------- */
+      @media (max-width: 520px) {
+        body {
+          /* 작은 화면에서 16px 미만이면 iOS Safari 가 입력 시 확대한다. */
+          font-size: 16px;
+        }
+        .topbar {
+          position: sticky;
+        }
+        .brand {
+          font-size: 17px;
+        }
+        .mock-banner {
+          font-size: 13px;
+          padding: 10px 12px;
+        }
+        .wrap {
+          padding: 12px 12px 72px;
+        }
+        /* 터치 타깃 최소 44px */
+        select,
+        .btn,
+        .seg button,
+        input[type="tel"] {
+          height: 44px;
+        }
+        .seg button {
+          padding: 0 8px;
+        }
+        .qty button {
+          width: 44px;
+          height: 44px;
+        }
+        .feed-grid {
+          gap: 12px;
+        }
+        .card .body {
+          padding: 12px;
+          gap: 8px;
+        }
+        .card .thumb {
+          max-height: 220px;
+        }
+        .section-head h2 {
+          font-size: 18px;
+        }
+      }
+      /* --- 초소형 화면은 가게 카드를 1열로 -------------------------------- */
+      @media (max-width: 380px) {
+        .feed-grid {
+          grid-template-columns: 1fr;
+        }
+        .field > label {
+          font-size: 12px;
+        }
+      }
       @media (max-width: 520px) {
         .loc-bar {
           flex-direction: column;
@@ -1225,7 +1317,8 @@
           gap: 6px;
         }
         .card .menu {
-          font-size: 13px;
+          font-size: 15px;
+          line-height: 1.4;
         }
         .card .body {
           padding: 10px;
@@ -1288,10 +1381,11 @@
           order: 4;
           margin-left: auto;
         }
+        /* 터치 가능한 높이는 유지하고 좌우 여백만 줄인다 */
         .topbar .btn {
-          height: 32px;
+          height: 40px;
           padding: 0 10px;
-          font-size: 12.5px;
+          font-size: 13px;
         }
         .topbar .back {
           font-size: 12px;

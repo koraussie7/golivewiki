@@ -76,3 +76,19 @@ for (const file of BANCHAN_SCRIPTS) {
   fs.copyFileSync(srcPath, destPath);
   console.log(`📦 copied js/${file}`);
 }
+
+// --- /banchan route ---------------------------------------------------------
+// golive.wiki/banchan 이 서버의 try_files 폴백(index.html)으로 떨어지지 않도록
+// 실제 디렉터리 인덱스를 dist 에 만든다. 내용은 redirect 한 장이고,
+// 배포 스크립트의 보존 목록 계산에도 dist 파일로 잡힌다.
+{
+  const routeSrc = path.join(ROOT, "banchan", "index.html");
+  const routeDir = path.join(ROOT, "dist", "banchan");
+  if (fs.existsSync(routeSrc)) {
+    fs.mkdirSync(routeDir, { recursive: true });
+    fs.copyFileSync(routeSrc, path.join(routeDir, "index.html"));
+    console.log("📦 copied banchan/index.html (/banchan 경로)");
+  } else {
+    console.warn("⚠️  missing banchan/index.html, /banchan 경로가 동작하지 않음");
+  }
+}

@@ -18,15 +18,23 @@ begin;
 
 -- --- 전제: Supabase 는 auth 스키마와 auth.uid()/auth.role() 을 기본 제공한다.
 -- 로컬/CI 처럼 없는 환경에서만 스텁을 만든다 (이미 있으면 아무 것도 하지 않음).
+-- 실제 Supabase 의 auth 스키마는 supabase_auth_admin 소유라 migration 롤이
+-- 함수를 만들 수 없다(42501). 그 경우엔 이미 있는 것으로 보고 넘어간다.
 create schema if not exists auth;
 do $$ begin
   create function auth.uid() returns uuid language sql stable as $f$
     select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $f$;
-exception when duplicate_function then null; end $$;
+exception
+  when duplicate_function then null;
+  when insufficient_privilege then null;
+end $$;
 do $$ begin
   create function auth.role() returns text language sql stable as $f$
     select coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), 'anon') $f$;
-exception when duplicate_function then null; end $$;
+exception
+  when duplicate_function then null;
+  when insufficient_privilege then null;
+end $$;
 
 -- --- enum -------------------------------------------------------------------
 do $$ begin
@@ -61,6 +69,9 @@ do $$ begin
   create type banchan_contact_method as enum ('phone', 'email');
 exception when duplicate_object then null; end $$;
 
+-- --- 반찬 마켓은 자체 도시 목록을 갖는다 --------------------------------------
+-- 0001 의 cities 는 원격(운영)에 없다. 0005 를 0001~0004 와 분리해 적용할 수 있도록
+-- 이 마이그레이션 안에서 필요한 만큼만 정의한다. (기존 objects 는 건드리지 않음)
 -- --- cities -----------------------------------------------------------------
 create table if not exists public.cities (
   id           uuid primary key default gen_random_uuid(),

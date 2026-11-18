@@ -275,6 +275,17 @@
     gap: 8px;
     transition: all .2s;
   }
+  /* 반찬 마켓 전용 강조 pill — 카테고리 목록 맨 앞에서 눈에 띄게 한다 */
+  .cat-pill.banchan-pill {
+    background: linear-gradient(135deg, rgba(245,158,11,.18), rgba(20,235,192,.14));
+    border-color: rgba(245,158,11,.55);
+    color: #FCD34D;
+  }
+  .cat-pill.banchan-pill:hover {
+    background: linear-gradient(135deg, #F59E0B, #14EBC0);
+    color: #09090B;
+    border-color: #F59E0B;
+  }
   .cat-pill:hover, .cat-pill.active {
     background: var(--at-primary);
     color: #09090B;
@@ -444,6 +455,7 @@
 
       <a href="screens-04-dashboard.html" class="nav-link" data-i18n="nav_find_work">일 찾기</a>
       <a href="screens-07-ride.html" class="nav-link" style="color:var(--at-primary);" data-i18n="nav_ride">🚕 라이드</a>
+      <a href="/banchan" class="nav-link" style="color:var(--at-primary); font-weight:800;">🍱 반찬 마켓</a>
       <a href="drone.html" class="nav-link" style="color:var(--at-primary);">🚁 드론 관제</a>
       <a href="smartglass.html" class="nav-link" style="color:var(--at-primary);">🥽 스마트글래스</a>
       <a href="login.html" class="nav-link" id="nav-auth" style="color:var(--at-primary); border:1px solid rgba(20,235,192,0.3); border-radius:999px;" data-i18n="nav_login">로그인</a>
@@ -514,6 +526,7 @@
 <!-- Category Filter Pills -->
 <div class="category-section">
   <div class="category-pills">
+    <a href="/banchan" class="cat-pill banchan-pill" data-i18n="cat_banchan">🍱 반찬 · 치킨 픽업</a>
     <a href="#" class="cat-pill active" data-i18n="cat_all">🔥 전체 실시간</a>
     <a href="#" class="cat-pill" data-i18n="cat_cleaning">🧹 청소 & 정리</a>
     <a href="#" class="cat-pill" data-i18n="cat_removal">📦 이사 & 용달</a>
